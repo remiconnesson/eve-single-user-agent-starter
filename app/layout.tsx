@@ -22,6 +22,10 @@ const mono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Eve Starter",
   description: "A Next.js starter for Eve agents with AI Elements.",
+  robots: {
+    follow: false,
+    index: false,
+  },
 };
 
 export const viewport: Viewport = {

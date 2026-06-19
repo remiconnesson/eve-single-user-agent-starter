@@ -89,6 +89,14 @@ export function AgentChat() {
               claude-sonnet-4.6
             </span>
             <StatusIndicator status={agent.status} />
+            <form action="/api/auth/logout" method="post">
+              <button
+                className="text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                type="submit"
+              >
+                Sign Out
+              </button>
+            </form>
           </div>
         </header>
 
