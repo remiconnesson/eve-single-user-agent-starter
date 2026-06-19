@@ -1,15 +1,16 @@
 import { eveChannel } from "eve/channels/eve";
 import { localDev, placeholderAuth, vercelOidc } from "eve/channels/auth";
+import { singleUserPasswordAuth } from "../../lib/auth/eve";
 
 export default eveChannel({
   auth: [
     // Open on localhost for `eve dev` and the REPL; ignored in production.
     localDev(),
+    // Accept the signed, HTTP-only cookie created by the app's password gate.
+    singleUserPasswordAuth(),
     // Lets the Eve TUI and your Vercel deployments reach the deployed agent.
     vercelOidc(),
-    // This placeholder will not allow browser requests in production.
-    // Replace it with your app's auth provider, like Auth.js or Clerk,
-    // or use none() for a public demo.
+    // Keep failing closed when no configured authenticator accepts the request.
     placeholderAuth(),
   ],
 });
