@@ -7,8 +7,8 @@ export const diagnostics = defineDiagnostics({
   docsBase: (code) => `${DIAGNOSTICS_BASE_URL}/${code.toLowerCase()}.md`,
   codes: {
     EVE_C001: {
-      why: "EVE_ACCESS_PASSWORD is required.",
-      fix: "Add a private EVE_ACCESS_PASSWORD in Vercel, then redeploy.",
+      why: "EVE_ACCESS_PASSWORD is required in production.",
+      fix: "Add a private EVE_ACCESS_PASSWORD to the Production environment in Vercel, then redeploy.",
     },
     EVE_C003: {
       why: "Local AI Gateway credentials are missing.",

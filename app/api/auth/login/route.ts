@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { Diagnostic } from "nostics";
+import { resolveAccessMode } from "@/lib/auth/access";
 import {
   createSessionToken,
   getAccessPassword,
@@ -12,6 +13,18 @@ import { useLogger, withEvlog } from "@/lib/evlog";
 
 export const POST = withEvlog(async (request: NextRequest) => {
   const requestLog = useLogger();
+  const accessMode = resolveAccessMode();
+  if (accessMode !== "password") {
+    requestLog.set({
+      authentication: {
+        outcome: "bypassed",
+        persistence: accessMode,
+        principalId: "owner",
+      },
+    });
+    return redirectToHome(request);
+  }
+
   const formData = await request.formData();
   const candidate = formData.get("password");
   const rememberMe = formData.get("rememberMe") === "on";
@@ -38,8 +51,7 @@ export const POST = withEvlog(async (request: NextRequest) => {
       principalId: "owner",
     },
   });
-  const response = NextResponse.redirect(new URL("/", request.url), 303);
-  response.headers.set("cache-control", "no-store");
+  const response = redirectToHome(request);
   response.cookies.set({
     httpOnly: true,
     ...(rememberMe ? { maxAge: SESSION_TTL_MS / 1000 } : {}),
@@ -51,6 +63,12 @@ export const POST = withEvlog(async (request: NextRequest) => {
   });
   return response;
 });
+
+function redirectToHome(request: NextRequest) {
+  const response = NextResponse.redirect(new URL("/", request.url), 303);
+  response.headers.set("cache-control", "no-store");
+  return response;
+}
 
 function redirectToLogin({
   error,

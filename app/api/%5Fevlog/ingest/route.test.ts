@@ -24,6 +24,28 @@ async function authenticatedRequest(body: unknown, origin = "https://eve.example
 }
 
 describe("POST /api/_evlog/ingest", () => {
+  it("accepts same-origin client logs in Vercel Preview without a cookie", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const request = new NextRequest("https://eve.example/api/_evlog/ingest", {
+      body: JSON.stringify({
+        event: "client.ready",
+        level: "info",
+        timestamp: "2026-06-19T12:00:00.000Z",
+      }),
+      headers: {
+        "content-type": "application/json",
+        host: "eve.example",
+        origin: "https://eve.example",
+      },
+      method: "POST",
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(204);
+  });
+
   it("accepts an allowlisted client diagnostic payload", async () => {
     vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
     const request = await authenticatedRequest({

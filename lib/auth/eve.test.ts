@@ -9,6 +9,23 @@ afterEach(() => {
 });
 
 describe("singleUserPasswordAuth", () => {
+  it("maps Vercel Preview requests to the owner without a cookie", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const authenticate = singleUserPasswordAuth();
+
+    const result = await authenticate(
+      new Request("https://eve.example/eve/v1/session"),
+    );
+
+    expect(result).toEqual({
+      attributes: {},
+      authenticator: "preview",
+      principalId: "owner",
+      principalType: "user",
+    });
+  });
+
   it("maps a valid cookie to the single owner principal", async () => {
     vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
     const token = await createSessionToken({

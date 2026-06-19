@@ -6,21 +6,22 @@ The smallest useful eve web starter: one agent, one Next.js page, and AI Element
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy)
 
-Vercel asks for one private value during deployment:
+Vercel asks for one private value for Production:
 
 - `EVE_ACCESS_PASSWORD`: a private password used to open the deployed workspace.
 
 Vercel supplies the agent with a short-lived OIDC token for AI Gateway automatically. No AI provider key is required. When deployment finishes, open its production URL and enter the access password. Sign-in lasts until the browser closes, or 30 days when **Remember me** is selected. Changing `EVE_ACCESS_PASSWORD` in the Vercel project invalidates existing sessions immediately.
 
+Local development and Vercel Preview deployments open without the application password. This uses Vercel's `VERCEL_ENV=preview` signal; Vercel Deployment Protection, when enabled, still applies before the app. Preview URLs are otherwise public, so do not use them for sensitive conversations or data.
+
 ## Run locally
 
-Requires Node.js 24, pnpm, the Vercel CLI, and an `EVE_ACCESS_PASSWORD`. Link the project and pull a short-lived OIDC token for local AI Gateway access.
+Requires Node.js 24, pnpm, and the Vercel CLI. Link the project and pull a short-lived OIDC token for local AI Gateway access. No access password is required locally.
 
 ```bash
 pnpm install
 vercel link
 vercel env pull .env.local
-# Add EVE_ACCESS_PASSWORD if it is not already present.
 pnpm dev
 ```
 
@@ -44,12 +45,12 @@ Browser history does not sync across devices or browsers. Deleting a chat remove
 
 ## Access protection
 
-This starter includes application-level protection so the production domain can remain private without Vercel's Advanced Deployment Protection:
+This starter includes application-level protection so the production domain can remain private without Vercel's Advanced Deployment Protection. Local development and Vercel Preview bypass this application password:
 
 - The password is checked only on the server and is never included in browser JavaScript.
 - Successful login creates a signed, HTTP-only, same-site cookie.
 - Next.js verifies the cookie before rendering the page; `proxy.ts` provides the early redirect but is not the only authorization check.
-- Eve independently verifies the same cookie before accepting session requests and records the caller as the single `owner` principal.
+- Eve independently verifies the same cookie in Production before accepting session requests and records every accepted caller as the single `owner` principal.
 - `/eve/v1/health` remains public for deployment health checks.
 
 This is intentionally single-user access, not an account system. Use a long, unique password. There is no password recovery flow; update `EVE_ACCESS_PASSWORD` in Vercel if it needs to be replaced.

@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { KeyRoundIcon, TerminalIcon } from "lucide-react";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { resolveAccessMode } from "@/lib/auth/access";
 import { getPublicDiagnostic } from "@/lib/diagnostics/catalog";
 
 export const metadata: Metadata = {
@@ -13,6 +15,8 @@ export default async function LoginPage({
 }: {
   readonly searchParams: Promise<{ readonly error?: string }>;
 }) {
+  if (resolveAccessMode() !== "password") redirect("/");
+
   const { error } = await searchParams;
   const configurationDiagnostic = getPublicDiagnostic(error);
 

@@ -10,6 +10,15 @@ afterEach(() => {
 });
 
 describe("proxy", () => {
+  it("allows Vercel Preview without a password or cookie", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+    vi.stubEnv("VERCEL_ENV", "preview");
+
+    const response = await proxy(new NextRequest("https://eve.example/"));
+
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+  });
+
   it("redirects unauthenticated page requests to login", async () => {
     vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
 
