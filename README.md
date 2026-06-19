@@ -7,8 +7,8 @@ The smallest useful eve web starter: one agent, one Next.js page, and AI Element
 Requires Node.js 24 and a model credential for the default `anthropic/claude-sonnet-4.6` model.
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
