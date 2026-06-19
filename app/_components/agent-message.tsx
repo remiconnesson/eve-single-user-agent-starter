@@ -47,10 +47,11 @@ export function AgentMessage({
 
   return (
     <Message
+      className="max-w-full"
       data-optimistic={message.metadata?.optimistic ? "true" : undefined}
       from={message.role}
     >
-      <MessageContent>
+      <MessageContent className="group-[.is-user]:rounded-md group-[.is-user]:px-3.5 group-[.is-user]:py-2.5">
         {message.parts.map((part, index) => (
           <AgentMessagePart
             canRespond={canRespond}
@@ -247,7 +248,7 @@ function InputRequestActions({
   );
 
   return (
-    <div className="space-y-3 rounded-md border border-yellow-500/30 bg-yellow-500/5 p-3">
+    <div className="space-y-3 rounded-md border border-amber-400 bg-amber-100 p-3">
       <p className="text-muted-foreground text-sm">{inputRequest.prompt}</p>
       {inputResponse ? (
         <p className="font-medium text-sm">

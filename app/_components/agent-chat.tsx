@@ -1,7 +1,7 @@
 "use client";
 
 import { useEveAgent } from "eve/react";
-import { AlertCircleIcon } from "lucide-react";
+import { AlertCircleIcon, ArrowRightIcon, TerminalIcon } from "lucide-react";
 import {
   Conversation,
   ConversationContent,
@@ -16,8 +16,13 @@ import {
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
 
-const AGENT_NAME = "eve-starter-template";
 const BETA_TERMS_HREF = "https://vercel.com/docs/release-phases/public-beta-agreement";
+const SUGGESTIONS = [
+  "Inspect This Project",
+  "Write a Small Script",
+  "Research a Topic",
+  "Run a Sandbox Command",
+] as const;
 
 type AgentStatus = ReturnType<typeof useEveAgent>["status"];
 
@@ -34,111 +39,166 @@ export function AgentChat() {
   };
 
   const composer = (
-    <PromptInput onSubmit={handleSubmit}>
-      <PromptInputTextarea placeholder="Send a message…" />
-      <PromptInputSubmit onStop={agent.stop} status={agent.status} />
+    <PromptInput
+      className="rounded-md border-gray-400 bg-background shadow-[0_2px_2px_rgba(0,0,0,0.04)] focus-within:border-gray-600"
+      onSubmit={handleSubmit}
+    >
+      <PromptInputTextarea
+        aria-label="Message Eve"
+        className="min-h-24 px-4 py-3 pr-14 text-[16px] leading-6 placeholder:text-gray-700 sm:text-sm"
+        placeholder="Ask Eve anything…"
+      />
+      <PromptInputSubmit
+        className="right-3 bottom-3 rounded-md"
+        onStop={agent.stop}
+        status={agent.status}
+      />
     </PromptInput>
   );
 
   return (
-    <main className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-      {isEmpty ? null : (
-        <header className="flex h-14 shrink-0 items-center justify-center gap-3 pl-4 pr-2">
-          <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-muted-foreground text-sm">{AGENT_NAME}</span>
-            <StatusDot status={agent.status} />
-          </span>
-          <a
-            className="rounded-full border border-amber-500/30 px-2 py-0.5 font-medium text-amber-700 text-xs transition-colors hover:bg-amber-500/10 dark:text-amber-300"
-            href={BETA_TERMS_HREF}
-            rel="noreferrer"
-            target="_blank"
-          >
-            Public preview
-          </a>
-        </header>
-      )}
-
-      {agent.error ? (
-        <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pt-2 sm:px-6">
-          <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
-            <AlertCircleIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
-            <div>
-              <p className="font-medium">Request failed</p>
-              <p className="mt-0.5 text-muted-foreground">{agent.error.message}</p>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {isEmpty ? null : (
-        <Conversation className="min-h-0 flex-1">
-          <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6 sm:px-6">
-            {agent.data.messages.map((message, index) => (
-              <AgentMessage
-                canRespond={!isBusy}
-                isStreaming={
-                  agent.status === "streaming" && index === agent.data.messages.length - 1
-                }
-                key={message.id}
-                message={message}
-                onInputResponses={(inputResponses) => agent.send({ inputResponses })}
-              />
-            ))}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
-      )}
-
+    <main className="relative h-dvh overflow-hidden bg-[#fafafa] text-foreground">
       <div
-        className={cn(
-          "mx-auto w-full px-4 sm:px-6",
-          isEmpty
-            ? "flex max-w-xl flex-1 flex-col items-center justify-center gap-8 pb-[10vh]"
-            : "max-w-3xl shrink-0 pb-6",
-        )}
-      >
-        {isEmpty ? (
-          <div className="flex flex-col items-center gap-3 text-center">
-            <h1 className="font-medium text-5xl tracking-tighter">{AGENT_NAME}</h1>
+        aria-hidden="true"
+        className="geist-grid pointer-events-none absolute inset-0 opacity-70"
+      />
+      <section className="relative mx-auto flex h-full w-full max-w-[960px] flex-col bg-background shadow-[0_0_0_1px_rgba(0,0,0,0.04)] sm:border-x">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground text-background">
+              <TerminalIcon aria-hidden="true" className="size-4" />
+            </div>
+            <div className="flex min-w-0 items-center gap-2 text-sm">
+              <span className="truncate font-semibold tracking-[-0.01em]">eve</span>
+              <span aria-hidden="true" className="text-gray-600">
+                /
+              </span>
+              <span className="hidden truncate text-gray-900 sm:inline">starter</span>
+            </div>
             <a
-              className="rounded-full border border-amber-500/30 px-2 py-0.5 font-medium text-amber-700 text-xs transition-colors hover:bg-amber-500/10 dark:text-amber-300"
+              className="rounded-full border border-gray-400 bg-background px-2 py-0.5 text-[11px] text-gray-900 transition-colors hover:border-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               href={BETA_TERMS_HREF}
               rel="noreferrer"
               target="_blank"
             >
-              Public preview
+              Public Preview
             </a>
           </div>
+          <div className="flex items-center gap-4">
+            <span className="hidden font-mono text-xs text-gray-800 md:inline">
+              claude-sonnet-4.6
+            </span>
+            <StatusIndicator status={agent.status} />
+          </div>
+        </header>
+
+        {agent.error ? (
+          <div className="shrink-0 border-b border-red-400 bg-red-100 px-4 py-3 sm:px-6">
+            <div className="mx-auto flex w-full max-w-3xl items-start gap-3 text-sm">
+              <AlertCircleIcon className="mt-0.5 size-4 shrink-0 text-red-900" />
+              <div>
+                <p className="font-medium text-red-1000">Request Failed</p>
+                <p className="mt-0.5 text-red-900">
+                  {agent.error.message} Check your API key and try again.
+                </p>
+              </div>
+            </div>
+          </div>
         ) : null}
-        <div className="w-full">{composer}</div>
-      </div>
+
+        {isEmpty ? (
+          <div className="flex min-h-0 flex-1 items-center justify-center px-4 py-10 sm:px-6">
+            <div className="w-full max-w-2xl">
+              <div className="mb-8">
+                <div className="mb-5 grid size-10 place-items-center rounded-md border border-gray-400 bg-background shadow-[0_2px_2px_rgba(0,0,0,0.04)]">
+                  <TerminalIcon aria-hidden="true" className="size-4" />
+                </div>
+                <h1 className="max-w-xl text-[32px] font-semibold leading-10 tracking-[-0.04em] sm:text-[40px] sm:leading-12">
+                  What can Eve help with?
+                </h1>
+                <p className="mt-3 max-w-xl text-sm leading-6 text-gray-900 sm:text-base">
+                  Ask a question, inspect a project, or run tools in a secure sandbox.
+                </p>
+              </div>
+
+              {composer}
+
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {SUGGESTIONS.map((suggestion) => (
+                  <button
+                    className="group flex min-h-10 items-center justify-between rounded-md border border-gray-400 bg-background px-3 text-left text-sm text-gray-900 transition-colors hover:border-gray-500 hover:bg-gray-100 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isBusy}
+                    key={suggestion}
+                    onClick={() => {
+                      void agent.send({ message: suggestion });
+                    }}
+                    type="button"
+                  >
+                    <span>{suggestion}</span>
+                    <ArrowRightIcon
+                      aria-hidden="true"
+                      className="size-3.5 text-gray-700 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transform-none"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <Conversation className="min-h-0 flex-1">
+            <ConversationContent className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6 sm:py-10">
+              {agent.data.messages.map((message, index) => (
+                <AgentMessage
+                  canRespond={!isBusy}
+                  isStreaming={
+                    agent.status === "streaming" && index === agent.data.messages.length - 1
+                  }
+                  key={message.id}
+                  message={message}
+                  onInputResponses={(inputResponses) => agent.send({ inputResponses })}
+                />
+              ))}
+            </ConversationContent>
+            <ConversationScrollButton />
+          </Conversation>
+        )}
+
+        {isEmpty ? null : (
+          <div className="shrink-0 border-t bg-background px-4 py-4 sm:px-6">
+            <div className="mx-auto w-full max-w-3xl">
+              {composer}
+              <p className="mt-2 text-center text-xs text-gray-800">
+                Eve can make mistakes. Review tool output before using it.
+              </p>
+            </div>
+          </div>
+        )}
+      </section>
     </main>
   );
 }
 
-function StatusDot({ status }: { readonly status: AgentStatus }) {
+function StatusIndicator({ status }: { readonly status: AgentStatus }) {
   const isLive = status === "submitted" || status === "streaming";
-  const tone =
+  const label =
     status === "error"
-      ? "bg-destructive"
+      ? "Error"
       : isLive
-        ? "bg-emerald-500"
+        ? "Working…"
         : status === "ready"
-          ? "bg-muted-foreground"
-          : "bg-muted-foreground/50";
+          ? "Ready"
+          : "Idle";
+  const tone =
+    status === "error" ? "bg-red-700" : isLive ? "bg-amber-700" : "bg-green-700";
 
   return (
-    <span className="relative flex size-1">
-      {isLive ? (
-        <span
-          className={cn(
-            "absolute inline-flex size-full animate-ping rounded-full opacity-75",
-            tone,
-          )}
-        />
-      ) : null}
-      <span className={cn("relative inline-flex size-1 rounded-full transition-colors", tone)} />
+    <span
+      aria-live="polite"
+      className="flex items-center gap-2 text-xs text-gray-900"
+      role="status"
+    >
+      <span aria-hidden="true" className={cn("size-1.5 rounded-full", tone)} />
+      <span>{label}</span>
     </span>
   );
 }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,8 +20,13 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "eve-starter-template",
+  title: "Eve Starter",
   description: "A Next.js starter for Eve agents with AI Elements.",
+};
+
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#fafafa",
 };
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
