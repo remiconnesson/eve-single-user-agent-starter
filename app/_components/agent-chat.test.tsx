@@ -115,13 +115,13 @@ describe("AgentChat input requests", () => {
     expect(html).not.toContain("claude-sonnet-4.6");
   });
 
-  it("hides diagnostics when the agent has no error", () => {
+  it("does not render diagnostics controls", () => {
     const html = renderChat();
 
     expect(html).not.toContain('href="/diagnostics"');
   });
 
-  it("shows diagnostics when the agent has an error", () => {
+  it("keeps diagnostic codes and support instructions out of error UI", () => {
     mocks.useEveAgent.mockReturnValue({
       data: { messages },
       error: new Error("Request failed"),
@@ -134,7 +134,10 @@ describe("AgentChat input requests", () => {
 
     const html = renderChat();
 
-    expect(html).toContain('href="/diagnostics"');
+    expect(html).toContain("Request failed");
+    expect(html).not.toContain('href="/diagnostics"');
+    expect(html).not.toContain("EVE_R001");
+    expect(html).not.toContain("support report");
   });
 
   it("renders sign out as a compact outlined action", () => {

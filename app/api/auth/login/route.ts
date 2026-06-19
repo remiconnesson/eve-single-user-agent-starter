@@ -9,6 +9,7 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
+import { toDiagnosticLogFields } from "@/lib/diagnostics/catalog";
 import { useLogger, withEvlog } from "@/lib/evlog";
 
 export const POST = withEvlog(async (request: NextRequest) => {
@@ -33,8 +34,13 @@ export const POST = withEvlog(async (request: NextRequest) => {
     password = getAccessPassword();
   } catch (error) {
     if (error instanceof Diagnostic) {
-      requestLog.set({ authentication: { diagnosticCode: error.name, outcome: "misconfigured" } });
-      return redirectToLogin({ error: error.name, request });
+      requestLog.error(error, {
+        authentication: {
+          diagnostic: toDiagnosticLogFields(error),
+          outcome: "misconfigured",
+        },
+      });
+      return redirectToLogin({ error: "configuration", request });
     }
     throw error;
   }

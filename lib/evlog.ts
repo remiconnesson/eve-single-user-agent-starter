@@ -24,7 +24,6 @@ export const { createError, log, useLogger, withEvlog } = createEvlog({
   routes: {
     "/api/_evlog/**": { service: `${SERVICE_NAME}:client` },
     "/api/auth/**": { service: `${SERVICE_NAME}:auth` },
-    "/api/diagnostics": { service: `${SERVICE_NAME}:diagnostics` },
   },
   service: SERVICE_NAME,
   silent: process.env.NODE_ENV === "test",

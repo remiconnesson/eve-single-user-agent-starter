@@ -1,6 +1,7 @@
 import type { IngestPayload } from "evlog";
 import type { NextRequest } from "next/server";
 import { hasAuthorizedAccess } from "@/lib/auth/access";
+import { getDiagnosticLogFields } from "@/lib/diagnostics/catalog";
 import { useLogger, withEvlog } from "@/lib/evlog";
 
 export const POST = withEvlog(async (request: NextRequest) => {
@@ -21,8 +22,9 @@ export const POST = withEvlog(async (request: NextRequest) => {
     return Response.json({ error: "Invalid payload" }, { status: 400 });
   }
 
+  const diagnostic = getDiagnosticLogFields(payload.diagnosticCode);
   const clientLog = {
-    diagnosticCode: readOptionalString(payload.diagnosticCode),
+    ...(diagnostic ? { diagnostic } : {}),
     errorName: readOptionalString(payload.errorName),
     event: readOptionalString(payload.event),
     level: payload.level,

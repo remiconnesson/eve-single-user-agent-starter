@@ -29,6 +29,10 @@ import type {
   ChatHistorySummary,
 } from "@/lib/chat-history/store";
 import { UNTITLED_CHAT_TITLE } from "@/lib/chat-history/store";
+import {
+  diagnostics,
+  toDiagnosticLogFields,
+} from "@/lib/diagnostics/catalog";
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
 import { ChatHistoryPanel } from "./chat-history-panel";
@@ -36,6 +40,8 @@ import { MAX_SANDBOX_FILE_BYTES, createSandboxFileMessage } from "./sandbox-file
 import { SandboxUploadControl } from "./sandbox-upload-control";
 
 const BETA_TERMS_HREF = "https://vercel.com/docs/release-phases/public-beta-agreement";
+const AGENT_REQUEST_DIAGNOSTIC = toDiagnosticLogFields(diagnostics.EVE_R001());
+const FILE_UPLOAD_DIAGNOSTIC = toDiagnosticLogFields(diagnostics.EVE_R002());
 const SUGGESTIONS = [
   "Inspect This Project",
   "Write a Small Script",
@@ -94,7 +100,12 @@ export function AgentChatSession({
 
   useEffect(() => {
     if (!errorMessage) return;
-    clientLog.error({ diagnosticCode: "EVE_R001", errorName, event: "agent.request_failed" });
+    clientLog.error({
+      diagnostic: AGENT_REQUEST_DIAGNOSTIC,
+      diagnosticCode: AGENT_REQUEST_DIAGNOSTIC.code,
+      errorName,
+      event: "agent.request_failed",
+    });
   }, [errorMessage, errorName]);
 
   useEffect(() => {
@@ -142,7 +153,11 @@ export function AgentChatSession({
     } catch (error) {
       const message = error instanceof Error ? error.message : "The file could not be uploaded.";
       setUploadError(message);
-      clientLog.error({ diagnosticCode: "EVE_R002", event: "agent.file_submit_failed" });
+      clientLog.error({
+        diagnostic: FILE_UPLOAD_DIAGNOSTIC,
+        diagnosticCode: FILE_UPLOAD_DIAGNOSTIC.code,
+        event: "agent.file_submit_failed",
+      });
       return;
     } finally {
       setIsUploading(false);
@@ -299,14 +314,6 @@ export function AgentChatSession({
               {model}
             </span>
             <StatusIndicator status={agent.status} />
-            {agent.error ? (
-              <a
-                className="whitespace-nowrap text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                href="/diagnostics"
-              >
-                Diagnostics
-              </a>
-            ) : null}
             <form action="/api/auth/logout" method="post">
               <Button
                 className="border-gray-400 px-2.5 text-xs text-gray-900 shadow-none hover:bg-gray-100 hover:text-foreground"
@@ -328,8 +335,7 @@ export function AgentChatSession({
               <div>
                 <p className="font-medium text-red-1000">Request Failed</p>
                 <p className="mt-0.5 text-red-900">
-                  {agent.error.message} Diagnostic code EVE_R001. Open Diagnostics and copy the
-                  support report if retrying does not work.
+                  {agent.error.message} Retry the request once.
                 </p>
               </div>
             </div>

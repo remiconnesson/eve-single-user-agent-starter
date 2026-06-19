@@ -1,4 +1,5 @@
-import { Diagnostic, defineDiagnostics } from "nostics";
+import type { Diagnostic } from "nostics";
+import { defineDiagnostics } from "nostics";
 
 const DIAGNOSTICS_BASE_URL =
   "https://github.com/remiconnesson/eve-single-user-agent-starter/blob/main/docs/diagnostics";
@@ -20,7 +21,7 @@ export const diagnostics = defineDiagnostics({
     },
     EVE_R001: {
       why: "The agent could not complete the request.",
-      fix: "Open Diagnostics, copy the support report, then retry the request once.",
+      fix: "Retry the request once. If it fails again, inspect Vercel logs for this code and request ID.",
     },
     EVE_R002: {
       why: "A file could not be uploaded to the sandbox.",
@@ -29,34 +30,34 @@ export const diagnostics = defineDiagnostics({
   },
 });
 
-export interface PublicDiagnostic {
+export interface DiagnosticLogFields {
   readonly code: string;
   readonly docs?: string;
-  readonly fix: string;
+  readonly fix?: string;
   readonly why: string;
 }
 
-export function toPublicDiagnostic(diagnostic: Diagnostic): PublicDiagnostic {
+export function toDiagnosticLogFields(diagnostic: Diagnostic): DiagnosticLogFields {
   return {
     code: diagnostic.name,
     docs: diagnostic.docs,
-    fix: diagnostic.fix ?? "Open Diagnostics and copy the support report.",
+    fix: diagnostic.fix,
     why: diagnostic.why,
   };
 }
 
-export function getPublicDiagnostic(code: string | undefined): PublicDiagnostic | undefined {
+export function getDiagnosticLogFields(code: unknown): DiagnosticLogFields | undefined {
   switch (code) {
     case "EVE_C001":
-      return toPublicDiagnostic(diagnostics.EVE_C001());
+      return toDiagnosticLogFields(diagnostics.EVE_C001());
     case "EVE_C003":
-      return toPublicDiagnostic(diagnostics.EVE_C003());
+      return toDiagnosticLogFields(diagnostics.EVE_C003());
     case "EVE_C004":
-      return toPublicDiagnostic(diagnostics.EVE_C004());
+      return toDiagnosticLogFields(diagnostics.EVE_C004());
     case "EVE_R001":
-      return toPublicDiagnostic(diagnostics.EVE_R001());
+      return toDiagnosticLogFields(diagnostics.EVE_R001());
     case "EVE_R002":
-      return toPublicDiagnostic(diagnostics.EVE_R002());
+      return toDiagnosticLogFields(diagnostics.EVE_R002());
     default:
       return undefined;
   }

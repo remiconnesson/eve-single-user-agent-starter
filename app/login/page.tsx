@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { resolveAccessMode } from "@/lib/auth/access";
-import { getPublicDiagnostic } from "@/lib/diagnostics/catalog";
 
 export const metadata: Metadata = {
   title: "Sign In | Eve Single-User Agent Starter",
@@ -18,7 +17,12 @@ export default async function LoginPage({
   if (resolveAccessMode() !== "password") redirect("/");
 
   const { error } = await searchParams;
-  const configurationDiagnostic = getPublicDiagnostic(error);
+  const errorMessage =
+    error === "invalid"
+      ? "That password is not correct. Try again."
+      : error === "configuration"
+        ? "The app is not configured. Check the server logs."
+        : undefined;
 
   return (
     <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-[#fafafa] px-4 py-12 text-foreground">
@@ -60,7 +64,7 @@ export default async function LoginPage({
               Access password
             </label>
             <Input
-              aria-describedby={error === "invalid" ? "login-error" : undefined}
+              aria-describedby={errorMessage ? "login-error" : undefined}
               autoComplete="current-password"
               autoFocus
               id="password"
@@ -70,21 +74,10 @@ export default async function LoginPage({
               type="password"
             />
           </div>
-          {error === "invalid" ? (
+          {errorMessage ? (
             <p className="text-sm text-red-900" id="login-error" role="alert">
-              That password is not correct. Try again.
+              {errorMessage}
             </p>
-          ) : null}
-          {configurationDiagnostic ? (
-            <div className="rounded-md border border-red-400 bg-red-100 p-3" role="alert">
-              <p className="font-mono text-xs text-red-900">{configurationDiagnostic.code}</p>
-              <p className="mt-1 text-sm font-medium text-red-1000">
-                {configurationDiagnostic.why}
-              </p>
-              <p className="mt-1 text-sm leading-5 text-red-900">
-                {configurationDiagnostic.fix}
-              </p>
-            </div>
           ) : null}
           <div className="flex items-center gap-2 py-1">
             <input
