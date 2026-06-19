@@ -18,7 +18,6 @@ import {
 } from "@/components/ai-elements/conversation";
 import {
   PromptInput,
-  PromptInputFooter,
   type PromptInputMessage,
   PromptInputSubmit,
   PromptInputTextarea,
@@ -36,7 +35,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
 import { ChatHistoryPanel } from "./chat-history-panel";
-import { MAX_SANDBOX_FILE_BYTES, createSandboxFileMessage } from "./sandbox-file";
+import { createSandboxFileMessage } from "./sandbox-file";
 import { SandboxUploadControl } from "./sandbox-upload-control";
 
 const BETA_TERMS_HREF = "https://vercel.com/docs/release-phases/public-beta-agreement";
@@ -74,6 +73,7 @@ export function AgentChatSession({
   const persistedCursorRef = useRef(`${chat.events.length}:${chat.session.streamIndex}`);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<readonly File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const agent = useEveAgent({
     initialEvents: chat.events,
@@ -128,64 +128,65 @@ export function AgentChatSession({
   }, [agent.events, agent.session, chat.createdAt, chat.id, onPersistChat]);
 
   const sendMessage = async (text: string) => {
+    const normalizedText = text.trim();
+    if (!normalizedText || isSubmitting) return;
+
     if (chat.title === UNTITLED_CHAT_TITLE) {
-      titleRef.current = createChatTitle(text);
+      titleRef.current = createChatTitle(normalizedText);
     }
-    await agent.send({ message: text });
-  };
 
-  const handleSubmit = async (message: PromptInputMessage) => {
-    const text = message.text.trim();
-    const file = message.files[0];
-    if ((!text && !file) || isSubmitting) return;
-
-    if (!file) {
-      clientLog.info({ event: "agent.message_submitted", messageLength: text.length });
-      await sendMessage(text);
+    if (pendingFiles.length === 0) {
+      await agent.send({ message: normalizedText });
       return;
     }
 
     setIsUploading(true);
     setUploadError(null);
-    let content: Awaited<ReturnType<typeof createSandboxFileMessage>>;
     try {
-      content = await createSandboxFileMessage({ file, text });
+      const content = await createSandboxFileMessage({
+        files: pendingFiles,
+        text: normalizedText,
+      });
+      await agent.send({ message: content });
+      setPendingFiles([]);
+      clientLog.info({
+        event: "agent.files_submitted",
+        fileCount: pendingFiles.length,
+        messageLength: normalizedText.length,
+      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "The file could not be uploaded.";
+      const message =
+        error instanceof Error ? error.message : "The files could not be uploaded.";
       setUploadError(message);
       clientLog.error({
         diagnostic: FILE_UPLOAD_DIAGNOSTIC,
         diagnosticCode: FILE_UPLOAD_DIAGNOSTIC.code,
         event: "agent.file_submit_failed",
       });
-      return;
     } finally {
       setIsUploading(false);
     }
+  };
 
-    const title = text || file.filename || "Uploaded file";
-    if (chat.title === UNTITLED_CHAT_TITLE) {
-      titleRef.current = createChatTitle(title);
-    }
-    clientLog.info({
-      event: "agent.file_submitted",
-      fileSizeLimit: MAX_SANDBOX_FILE_BYTES,
-      messageLength: text.length,
-    });
-    await agent.send({ message: content });
+  const handleSubmit = async (message: PromptInputMessage) => {
+    const text = message.text.trim();
+    if (!text || isSubmitting) return;
+
+    clientLog.info({ event: "agent.message_submitted", messageLength: text.length });
+    await sendMessage(text);
   };
 
   const composer = (
     <div>
+      <SandboxUploadControl
+        disabled={isSubmitting}
+        files={pendingFiles}
+        onFilesChange={setPendingFiles}
+        onUploadError={setUploadError}
+      />
       <PromptInput
+        allowFileUploads={false}
         className="rounded-md border-gray-400 bg-background shadow-[0_2px_2px_rgba(0,0,0,0.04)] focus-within:border-gray-600"
-        maxFiles={1}
-        maxFileSize={MAX_SANDBOX_FILE_BYTES}
-        onError={({ code, message }) => {
-          setUploadError(
-            code === "max_file_size" ? "Files must be 3 MiB or smaller." : message,
-          );
-        }}
         onSubmit={handleSubmit}
       >
         <PromptInputTextarea
@@ -193,12 +194,6 @@ export function AgentChatSession({
           className="min-h-24 px-4 py-3 pr-14 text-[16px] leading-6 placeholder:text-gray-700 sm:text-sm"
           placeholder="Ask Eve anything…"
         />
-        <PromptInputFooter className="pr-12">
-          <SandboxUploadControl
-            disabled={isSubmitting}
-            onClearError={() => setUploadError(null)}
-          />
-        </PromptInputFooter>
         <PromptInputSubmit
           className="right-3 bottom-3 rounded-md"
           disabled={isUploading}

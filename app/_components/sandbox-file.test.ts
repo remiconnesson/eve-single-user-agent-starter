@@ -3,46 +3,77 @@ import {
   createSandboxFileMessage,
   parseDownloadFileOutput,
   parseGeneratedImageOutput,
+  validateUserUploadFiles,
 } from "./sandbox-file";
 
 describe("createSandboxFileMessage", () => {
-  it("builds an Eve turn with text and one inline file", async () => {
+  it("builds one Eve turn with text and several inline files", async () => {
     const message = await createSandboxFileMessage({
-      file: {
-        filename: "notes.txt",
-        mediaType: "text/plain",
-        type: "file",
-        url: "data:text/plain;base64,aGVsbG8=",
-      },
+      files: [
+        new File(["hello"], "notes.txt", { type: "text/plain" }),
+        new File(["{}"], "data.json", { type: "application/json" }),
+      ],
       text: "Summarize this file",
     });
 
-    expect(message).toEqual([
-      { text: "Summarize this file", type: "text" },
-      {
-        data: "data:text/plain;base64,aGVsbG8=",
-        filename: "notes.txt",
-        mediaType: "text/plain",
-        type: "file",
-      },
-    ]);
+    expect(message).toHaveLength(3);
+    expect(message[0]).toEqual({ text: "Summarize this file", type: "text" });
+    expect(message[1]).toMatchObject({
+      data: "data:text/plain;base64,aGVsbG8=",
+      filename: "notes.txt",
+      mediaType: "text/plain",
+      type: "file",
+    });
+    expect(message[2]).toMatchObject({
+      data: "data:application/json;base64,e30=",
+      filename: "data.json",
+      mediaType: "application/json",
+      type: "file",
+    });
   });
 
-  it("rejects files above 3 MiB", async () => {
-    const oversized = new Uint8Array(3 * 1024 * 1024 + 1);
-    const data = Buffer.from(oversized).toString("base64");
+  it("rejects files above 1 MiB", async () => {
+    const oversized = new Uint8Array(1024 * 1024 + 1);
 
     await expect(
       createSandboxFileMessage({
-        file: {
-          filename: "too-large.bin",
-          mediaType: "application/octet-stream",
-          type: "file",
-          url: `data:application/octet-stream;base64,${data}`,
-        },
+        files: [
+          new File([oversized], "too-large.bin", {
+            type: "application/octet-stream",
+          }),
+        ],
         text: "Upload this file",
       }),
-    ).rejects.toThrow("3 MiB");
+    ).rejects.toThrow("1 MiB");
+  });
+
+  it("requires a real prompt instead of creating a file-only turn", async () => {
+    await expect(
+      createSandboxFileMessage({
+        files: [new File(["hello"], "notes.txt", { type: "text/plain" })],
+        text: "",
+      }),
+    ).rejects.toThrow("Enter a message");
+  });
+
+  it("bounds multi-file request count and combined size", () => {
+    expect(() =>
+      validateUserUploadFiles(
+        Array.from(
+          { length: 6 },
+          (_, index) => new File([String(index)], `${index}.txt`),
+        ),
+      ),
+    ).toThrow("up to 5 files");
+
+    expect(() =>
+      validateUserUploadFiles(
+        Array.from(
+          { length: 4 },
+          (_, index) => new File([new Uint8Array(800 * 1024)], `${index}.bin`),
+        ),
+      ),
+    ).toThrow("3 MiB");
   });
 });
 
