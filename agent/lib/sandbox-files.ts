@@ -2,10 +2,13 @@ import { posix } from "node:path";
 import { Readable } from "node:stream";
 import type { SandboxSession } from "eve/sandbox";
 import { z } from "zod";
+import {
+  MAX_SANDBOX_FILE_BYTES,
+  type SandboxFileArtifact,
+  sandboxFileArtifactSchema,
+} from "../../lib/sandbox-files/contracts";
 
-// Base64 expands files by roughly one third. Keep the encoded request or
-// response below Vercel's 4.5 MB function payload limit.
-export const MAX_SANDBOX_FILE_BYTES = 3 * 1024 * 1024;
+export { MAX_SANDBOX_FILE_BYTES };
 
 const MAX_SANDBOX_PATH_LENGTH = 1024;
 const WORKSPACE_ROOT = "/workspace";
@@ -87,15 +90,9 @@ export const sandboxFilePathSchema = sandboxFileInputPathSchema
 
 export type SandboxFilePath = z.output<typeof sandboxFilePathSchema>;
 
-export const downloadSandboxFileOutputSchema = z.object({
-  byteLength: z.number().int().nonnegative().max(MAX_SANDBOX_FILE_BYTES),
-  dataBase64: z.string(),
-  filename: z.string().min(1),
-  mediaType: z.string().min(1),
-  path: z.string().startsWith(`${WORKSPACE_ROOT}/`),
-});
+export const downloadSandboxFileOutputSchema = sandboxFileArtifactSchema;
 
-export type SandboxFileDownload = z.output<typeof downloadSandboxFileOutputSchema>;
+export type SandboxFileDownload = SandboxFileArtifact;
 
 type SandboxFileReader = {
   readonly readFile: (

@@ -4,19 +4,17 @@ import {
   MAX_USER_UPLOAD_FILES,
   MAX_USER_UPLOAD_TOTAL_BYTES,
 } from "@/lib/user-uploads/constants";
+import {
+  type SandboxFileArtifact,
+  sandboxFileArtifactSchema,
+  sandboxFilenameSchema,
+  sandboxImageArtifactSchema,
+  sandboxMediaTypeSchema,
+} from "@/lib/sandbox-files/contracts";
 
-// The file becomes base64 inside Eve's JSON request and tool result.
-export const MAX_SANDBOX_FILE_BYTES = 3 * 1024 * 1024;
 const BASE64_CHUNK_SIZE = 32_768;
-const INLINE_IMAGE_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
-export interface SandboxFileArtifact {
-  readonly byteLength: number;
-  readonly dataBase64: string;
-  readonly filename: string;
-  readonly mediaType: string;
-  readonly path: string;
-}
+export type { SandboxFileArtifact };
 
 export async function createSandboxFileMessage({
   files,
@@ -33,8 +31,9 @@ export async function createSandboxFileMessage({
     files.map(async (file): Promise<FilePart> => {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const filename = sanitizeUploadFilename(file.name);
-      const mediaType = isValidMediaType(file.type)
-        ? file.type
+      const parsedMediaType = sandboxMediaTypeSchema.safeParse(file.type);
+      const mediaType = parsedMediaType.success
+        ? parsedMediaType.data
         : "application/octet-stream";
       return {
         data: `data:${mediaType};base64,${bytesToBase64(bytes)}`,
@@ -79,109 +78,47 @@ export function mergeUserUploadFiles(
 }
 
 export function parseDownloadFileOutput(output: unknown): SandboxFileArtifact | null {
-  return parseSandboxFileArtifact(output, { imageOnly: false, requireFilename: true });
+  const parsed = sandboxFileArtifactSchema.safeParse(output);
+  return parsed.success ? parsed.data : null;
 }
 
 export function parseGeneratedImageOutput(output: unknown): SandboxFileArtifact | null {
-  return parseSandboxFileArtifact(output, { imageOnly: true, requireFilename: false });
+  const parsed = sandboxImageArtifactSchema.safeParse(
+    withGeneratedImageFilename(output),
+  );
+  return parsed.success ? parsed.data : null;
 }
 
 export function sandboxFileDataUrl(artifact: SandboxFileArtifact): string {
   return `data:${artifact.mediaType};base64,${artifact.dataBase64}`;
 }
 
-function parseSandboxFileArtifact(
-  output: unknown,
-  options: { readonly imageOnly: boolean; readonly requireFilename: boolean },
-): SandboxFileArtifact | null {
-  if (typeof output !== "object" || output === null) return null;
-  if (!("byteLength" in output) || !isValidByteLength(output.byteLength)) return null;
-  if (!("dataBase64" in output) || typeof output.dataBase64 !== "string") return null;
-  if (!("mediaType" in output) || !isValidMediaType(output.mediaType)) return null;
-  if (!("path" in output) || !isValidSandboxPath(output.path)) return null;
-  if (options.imageOnly && !INLINE_IMAGE_MEDIA_TYPES.has(output.mediaType)) return null;
-  if (decodedBase64ByteLength(output.dataBase64) !== output.byteLength) return null;
-
-  const providedFilename = "filename" in output ? output.filename : undefined;
-  if (options.requireFilename && !isValidFilename(providedFilename)) return null;
-  if (providedFilename !== undefined && !isValidFilename(providedFilename)) return null;
-
-  return {
-    byteLength: output.byteLength,
-    dataBase64: output.dataBase64,
-    filename:
-      typeof providedFilename === "string" ? providedFilename : filenameFromPath(output.path),
-    mediaType: output.mediaType,
-    path: output.path,
-  };
-}
-
-function isValidByteLength(value: unknown): value is number {
-  return (
-    typeof value === "number" &&
-    Number.isSafeInteger(value) &&
-    value >= 0 &&
-    value <= MAX_SANDBOX_FILE_BYTES
-  );
-}
-
-function isValidFilename(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length > 0 &&
-    value.length <= 255 &&
-    value !== "." &&
-    value !== ".." &&
-    !value.includes("/") &&
-    !value.includes("\\") &&
-    !/[\u0000-\u001f\u007f]/u.test(value)
-  );
-}
-
 function sanitizeUploadFilename(value: string): string {
   const basename = value.split("/").at(-1)?.split("\\").at(-1) ?? "";
   const safe = basename.replace(/[^\w.-]+/gu, "_");
-  return isValidFilename(safe) && safe !== "." && safe !== ".." ? safe : "upload";
+  const parsed = sandboxFilenameSchema.safeParse(safe);
+  return parsed.success ? parsed.data : "upload";
 }
 
-function isValidMediaType(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length <= 127 &&
-    /^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/iu.test(value)
-  );
-}
-
-function isValidSandboxPath(value: unknown): value is string {
+function withGeneratedImageFilename(output: unknown): unknown {
   if (
-    typeof value !== "string" ||
-    !value.startsWith("/workspace/") ||
-    value.length > 1024 ||
-    /[\u0000-\u001f\u007f]/u.test(value)
+    !isRecord(output) ||
+    typeof output.path !== "string" ||
+    output.filename !== undefined
   ) {
-    return false;
+    return output;
   }
 
-  const segments = value.slice("/workspace/".length).split("/");
-  return segments.every((segment) => segment !== "" && segment !== "." && segment !== "..");
-}
-
-function decodedBase64ByteLength(value: string): number | null {
-  if (value.length === 0) return 0;
-  if (
-    value.length % 4 !== 0 ||
-    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value)
-  ) {
-    return null;
-  }
-
-  const padding = value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0;
-  return (value.length / 4) * 3 - padding;
+  return { ...output, filename: filenameFromPath(output.path) };
 }
 
 function filenameFromPath(path: string): string {
-  const filename = path.split("/").at(-1);
-  return filename && isValidFilename(filename) ? filename : "generated-image";
+  const parsed = sandboxFilenameSchema.safeParse(path.split("/").at(-1));
+  return parsed.success ? parsed.data : "generated-image";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
