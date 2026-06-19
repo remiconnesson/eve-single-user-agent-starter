@@ -1,0 +1,52 @@
+import { NextRequest } from "next/server";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createSessionToken, parseAccessPassword, SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { POST } from "./route";
+
+const ACCESS_PASSWORD = "correct horse battery staple";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
+
+async function authenticatedRequest(body: unknown, origin = "https://eve.example") {
+  const token = await createSessionToken({ password: parseAccessPassword(ACCESS_PASSWORD) });
+  return new NextRequest("https://eve.example/api/_evlog/ingest", {
+    body: JSON.stringify(body),
+    headers: {
+      "content-type": "application/json",
+      cookie: `${SESSION_COOKIE_NAME}=${token}`,
+      host: "eve.example",
+      origin,
+    },
+    method: "POST",
+  });
+}
+
+describe("POST /api/_evlog/ingest", () => {
+  it("accepts an allowlisted client diagnostic payload", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
+    const request = await authenticatedRequest({
+      diagnosticCode: "EVE_R001",
+      event: "agent.request_failed",
+      level: "error",
+      timestamp: "2026-06-19T12:00:00.000Z",
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(204);
+  });
+
+  it("rejects requests from another origin", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
+    const request = await authenticatedRequest(
+      { event: "test", level: "info", timestamp: "2026-06-19T12:00:00.000Z" },
+      "https://attacker.example",
+    );
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(403);
+  });
+});

@@ -1,5 +1,7 @@
 import { createHash, timingSafeEqual } from "node:crypto";
+import { diagnostics } from "@/lib/diagnostics/catalog";
 
+// TODO: Remove the 16-character minimum and update diagnostics, tests, and setup docs after launch.
 export const ACCESS_PASSWORD_MIN_LENGTH = 16;
 export const SESSION_COOKIE_NAME = "eve_session";
 export const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
@@ -10,18 +12,22 @@ const encoder = new TextEncoder();
 export function parseAccessPassword(rawPassword: string | undefined): string {
   const password = rawPassword?.trim();
   if (!password) {
-    throw new Error("EVE_ACCESS_PASSWORD is required.");
+    throw diagnostics.EVE_C001();
   }
   if (password.length < ACCESS_PASSWORD_MIN_LENGTH) {
-    throw new Error(
-      `EVE_ACCESS_PASSWORD must be at least ${ACCESS_PASSWORD_MIN_LENGTH} characters.`,
-    );
+    throw diagnostics.EVE_C002();
   }
   return password;
 }
 
 export function getAccessPassword(): string {
   return parseAccessPassword(process.env.EVE_ACCESS_PASSWORD);
+}
+
+export async function hasValidSessionCookie(cookieHeader: string | null): Promise<boolean> {
+  const password = getAccessPassword();
+  const token = readCookie({ cookieHeader, name: SESSION_COOKIE_NAME });
+  return verifySessionToken({ password, token });
 }
 
 export function matchesAccessPassword({

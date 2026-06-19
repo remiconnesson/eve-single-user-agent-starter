@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { EvlogProvider } from "evlog/next/client";
 import type { ReactNode } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,11 @@ const mono = Geist_Mono({
   display: "swap",
 });
 
+const clientLogTransport = {
+  enabled: true,
+  endpoint: "/api/_evlog/ingest",
+} as const;
+
 export const metadata: Metadata = {
   title: "Eve Starter",
   description: "A Next.js starter for Eve agents with AI Elements.",
@@ -37,7 +43,14 @@ export default function RootLayout({ children }: { readonly children: ReactNode 
   return (
     <html className={cn(sans.variable, mono.variable)} lang="en">
       <body>
-        <TooltipProvider>{children}</TooltipProvider>
+        <EvlogProvider
+          console={process.env.NODE_ENV !== "production"}
+          minLevel="info"
+          service="eve-single-user-agent-starter:browser"
+          transport={clientLogTransport}
+        >
+          <TooltipProvider>{children}</TooltipProvider>
+        </EvlogProvider>
       </body>
     </html>
   );

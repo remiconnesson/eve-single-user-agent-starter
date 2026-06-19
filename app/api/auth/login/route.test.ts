@@ -40,4 +40,13 @@ describe("POST /api/auth/login", () => {
     expect(response.headers.get("location")).toBe("https://eve.example/login?error=invalid");
     expect(response.headers.get("set-cookie")).toBeNull();
   });
+
+  it("redirects to an actionable diagnostic when deployment configuration is missing", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+
+    const response = await POST(loginRequest(ACCESS_PASSWORD));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("https://eve.example/login?error=EVE_C001");
+  });
 });
