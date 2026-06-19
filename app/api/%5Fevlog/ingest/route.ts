@@ -1,11 +1,11 @@
 import type { IngestPayload } from "evlog";
 import type { NextRequest } from "next/server";
-import { hasValidSessionCookie } from "@/lib/auth/session";
+import { hasAuthorizedAccess } from "@/lib/auth/access";
 import { useLogger, withEvlog } from "@/lib/evlog";
 
 export const POST = withEvlog(async (request: NextRequest) => {
   const requestLog = useLogger();
-  if (!(await hasValidSessionCookie(request.headers.get("cookie")))) {
+  if (!(await hasAuthorizedAccess(request.headers.get("cookie")))) {
     requestLog.set({ clientLog: { outcome: "denied" } });
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

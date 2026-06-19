@@ -1,7 +1,10 @@
+import type { AccessMode } from "@/lib/auth/access";
+import { resolveAccessMode } from "@/lib/auth/access";
 import type { PublicDiagnostic } from "./catalog";
 import { diagnostics, toPublicDiagnostic } from "./catalog";
 
 export interface DiagnosticReportInput {
+  readonly accessMode: AccessMode;
   readonly accessPassword: string | undefined;
   readonly aiGatewayApiKeyConfigured?: boolean;
   readonly commitSha?: string;
@@ -15,6 +18,7 @@ export interface DiagnosticReportInput {
 
 export interface DiagnosticReport {
   readonly configuration: {
+    readonly accessProtection: AccessMode;
     readonly accessPasswordConfigured: boolean;
     readonly gatewayAuthentication:
       | "api-key-fallback"
@@ -42,7 +46,7 @@ export function buildDiagnosticReport(input: DiagnosticReportInput): DiagnosticR
   const foundDiagnostics: PublicDiagnostic[] = [];
   const password = input.accessPassword?.trim();
 
-  if (!password) {
+  if (input.accessMode === "password" && !password) {
     foundDiagnostics.push(toPublicDiagnostic(diagnostics.EVE_C001()));
   }
 
@@ -58,6 +62,7 @@ export function buildDiagnosticReport(input: DiagnosticReportInput): DiagnosticR
 
   return {
     configuration: {
+      accessProtection: input.accessMode,
       accessPasswordConfigured: Boolean(password),
       gatewayAuthentication,
     },
@@ -80,6 +85,7 @@ export function buildDiagnosticReport(input: DiagnosticReportInput): DiagnosticR
 
 export function readDiagnosticReport(): DiagnosticReport {
   return buildDiagnosticReport({
+    accessMode: resolveAccessMode(),
     accessPassword: process.env.EVE_ACCESS_PASSWORD,
     aiGatewayApiKeyConfigured: Boolean(process.env.AI_GATEWAY_API_KEY),
     commitSha: process.env.VERCEL_GIT_COMMIT_SHA,

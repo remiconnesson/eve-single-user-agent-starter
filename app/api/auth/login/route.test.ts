@@ -20,6 +20,17 @@ function loginRequest(password: string, rememberMe = false) {
 }
 
 describe("POST /api/auth/login", () => {
+  it("bypasses login in Vercel Preview", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+    vi.stubEnv("VERCEL_ENV", "preview");
+
+    const response = await POST(loginRequest(""));
+
+    expect(response.status).toBe(303);
+    expect(response.headers.get("location")).toBe("https://eve.example/");
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
   it("sets a secure browser-session cookie by default", async () => {
     vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
 
