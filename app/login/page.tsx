@@ -6,7 +6,7 @@ import { ACCESS_PASSWORD_MIN_LENGTH } from "@/lib/auth/session";
 import { getPublicDiagnostic } from "@/lib/diagnostics/catalog";
 
 export const metadata: Metadata = {
-  title: "Sign In | Eve Starter",
+  title: "Sign In | Eve Single-User Agent Starter",
 };
 
 export default async function LoginPage({
@@ -26,7 +26,7 @@ export default async function LoginPage({
             <TerminalIcon aria-hidden="true" className="size-4" />
           </div>
           <div className="text-sm">
-            <p className="font-semibold tracking-[-0.01em]">eve / starter</p>
+            <p className="font-semibold tracking-[-0.01em]">eve / single user</p>
             <p className="text-xs text-gray-800">Private workspace</p>
           </div>
         </div>

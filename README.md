@@ -1,10 +1,10 @@
-# eve starter template
+# eve single-user agent starter
 
 The smallest useful eve web starter: one agent, one Next.js page, and AI Elements for streamed messages, reasoning, tools, approvals, and sandbox commands. Markdown is rendered with Streamdown through AI Elements' `MessageResponse`.
 
 ## Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-starter-template&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password%20of%20at%20least%2016%20characters.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-starter-template%23deploy)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password%20of%20at%20least%2016%20characters.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy)
 
 Vercel asks for one private value during deployment:
 
