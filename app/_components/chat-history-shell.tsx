@@ -27,9 +27,11 @@ type HistoryState =
 export function AgentChat({
   historyStore = localHistoryStore,
   model,
+  stopButtonEnabled,
 }: {
   readonly historyStore?: ChatHistoryStore;
   readonly model: string;
+  readonly stopButtonEnabled: boolean;
 }) {
   const [history, setHistory] = useState<HistoryState>({ kind: "loading" });
 
@@ -166,6 +168,7 @@ export function AgentChat({
       onPersistChat={persistChat}
       onRemoveChat={removeChat}
       onSelectChat={selectChat}
+      stopButtonEnabled={stopButtonEnabled}
     />
   );
 }
