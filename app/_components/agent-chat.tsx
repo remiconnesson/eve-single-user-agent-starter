@@ -5,10 +5,8 @@ import { log as clientLog } from "evlog/next/client";
 import {
   AlertCircleIcon,
   ArrowRightIcon,
-  HistoryIcon,
   LogOutIcon,
   TerminalIcon,
-  XIcon,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -36,6 +34,7 @@ import {
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
 import { ChatHistoryPanel } from "./chat-history-panel";
+import { MobileChatHistoryDialog } from "./mobile-chat-history-dialog";
 import { createSandboxFileMessage } from "./sandbox-file";
 import { SandboxUploadControl } from "./sandbox-upload-control";
 
@@ -74,7 +73,6 @@ export function AgentChatSession({
 }) {
   const titleRef = useRef(chat.title);
   const persistedCursorRef = useRef(`${chat.events.length}:${chat.session.streamIndex}`);
-  const [historyOpen, setHistoryOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<readonly File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -244,63 +242,18 @@ export function AgentChatSession({
           />
         </aside>
 
-        {historyOpen ? (
-          <div className="fixed inset-0 z-30 md:hidden">
-            <button
-              aria-label="Close chat history"
-              className="absolute inset-0 bg-black/20"
-              onClick={() => setHistoryOpen(false)}
-              type="button"
-            />
-            <aside
-              aria-label="Chat history"
-              aria-modal="true"
-              className="relative flex h-full w-[min(20rem,85vw)] border-r bg-[#fafafa] shadow-lg"
-              role="dialog"
-            >
-              <ChatHistoryPanel
-                activeId={chat.id}
-                chats={chats}
-                closeButton={
-                  <Button
-                    aria-label="Close chat history"
-                    onClick={() => setHistoryOpen(false)}
-                    size="icon-sm"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <XIcon aria-hidden="true" />
-                  </Button>
-                }
-                disabled={isSubmitting}
-                historyAvailable={historyAvailable}
-                onCreateChat={() => {
-                  setHistoryOpen(false);
-                  void onCreateChat();
-                }}
-                onRemoveChat={(id) => void onRemoveChat(id)}
-                onSelectChat={(id) => {
-                  setHistoryOpen(false);
-                  void onSelectChat(id);
-                }}
-              />
-            </aside>
-          </div>
-        ) : null}
-
         <section className="flex min-w-0 flex-1 flex-col bg-background">
           <header className="flex h-16 shrink-0 items-center justify-between border-b px-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
-            <Button
-              aria-label="Open chat history"
-              className="md:hidden"
-              onClick={() => setHistoryOpen(true)}
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-            >
-              <HistoryIcon aria-hidden="true" />
-            </Button>
+            <MobileChatHistoryDialog
+              activeId={chat.id}
+              chats={chats}
+              disabled={isSubmitting}
+              historyAvailable={historyAvailable}
+              onCreateChat={onCreateChat}
+              onRemoveChat={onRemoveChat}
+              onSelectChat={onSelectChat}
+            />
             <div className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground text-background">
               <TerminalIcon aria-hidden="true" className="size-4" />
             </div>

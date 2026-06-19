@@ -206,6 +206,13 @@ describe("AgentChat input requests", () => {
     expect(html).toContain("Saved in this browser");
   });
 
+  it("exposes mobile history as a dialog trigger", () => {
+    const html = renderChat();
+
+    expect(html).toContain('aria-haspopup="dialog"');
+    expect(html).toContain('aria-expanded="false"');
+  });
+
   it("offers a multi-file queue outside the prompt form", () => {
     const html = renderChat();
 
