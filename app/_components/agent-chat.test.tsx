@@ -107,4 +107,12 @@ describe("AgentChat input requests", () => {
 
     expect(html).toContain('href="/diagnostics"');
   });
+
+  it("renders sign out as a compact outlined action", () => {
+    const html = renderToStaticMarkup(<AgentChat model={MODEL} />);
+
+    expect(html).toMatch(
+      /<form action="\/api\/auth\/logout"[^>]*>.*<button[^>]*data-variant="outline"[^>]*data-size="sm"[^>]*>.*Sign Out<\/button>/,
+    );
+  });
 });
