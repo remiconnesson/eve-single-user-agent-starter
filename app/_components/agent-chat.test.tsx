@@ -87,4 +87,24 @@ describe("AgentChat input requests", () => {
     expect(html).toContain(MODEL);
     expect(html).not.toContain("claude-sonnet-4.6");
   });
+
+  it("hides diagnostics when the agent has no error", () => {
+    const html = renderToStaticMarkup(<AgentChat model={MODEL} />);
+
+    expect(html).not.toContain('href="/diagnostics"');
+  });
+
+  it("shows diagnostics when the agent has an error", () => {
+    mocks.useEveAgent.mockReturnValue({
+      data: { messages },
+      error: new Error("Request failed"),
+      send: mocks.send,
+      status: "error",
+      stop: mocks.stop,
+    });
+
+    const html = renderToStaticMarkup(<AgentChat model={MODEL} />);
+
+    expect(html).toContain('href="/diagnostics"');
+  });
 });
