@@ -1,6 +1,7 @@
 import { eveChannel } from "eve/channels/eve";
 import { localDev, placeholderAuth, vercelOidc } from "eve/channels/auth";
 import { singleUserPasswordAuth } from "../../lib/auth/eve";
+import { MAX_SANDBOX_FILE_BYTES } from "../lib/sandbox-files";
 
 export default eveChannel({
   auth: [
@@ -13,4 +14,8 @@ export default eveChannel({
     // Keep failing closed when no configured authenticator accepts the request.
     placeholderAuth(),
   ],
+  uploadPolicy: {
+    allowedMediaTypes: "*",
+    maxBytes: MAX_SANDBOX_FILE_BYTES,
+  },
 });

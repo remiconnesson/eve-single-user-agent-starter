@@ -139,6 +139,49 @@ describe("LocalStorageChatHistoryStore", () => {
     });
   });
 
+  it("does not persist inline sandbox file bytes", async () => {
+    const store = createLocalStorageChatHistoryStore({ key: STORAGE_KEY, storage });
+    const fileResult = {
+      data: {
+        result: {
+          callId: "call-1",
+          kind: "tool-result",
+          output: {
+            dataBase64: "a".repeat(1_000_000),
+            filename: "generated.png",
+            path: "/workspace/generated/generated.png",
+          },
+          toolName: "generate_image",
+        },
+        sequence: 0,
+        status: "completed",
+        stepIndex: 0,
+        turnId: "turn-1",
+      },
+      type: "action.result",
+    } satisfies HandleMessageStreamEvent;
+
+    await store.upsert(record({ events: [...events, fileResult] }));
+
+    expect(storage.getItem(STORAGE_KEY)).not.toContain("a".repeat(100));
+    await expect(store.get("chat-1")).resolves.toMatchObject({
+      events: [
+        events[0],
+        {
+          data: {
+            result: {
+              output: {
+                dataBase64Omitted: true,
+                filename: "generated.png",
+                path: "/workspace/generated/generated.png",
+              },
+            },
+          },
+        },
+      ],
+    });
+  });
+
   it("ignores corrupted browser data instead of breaking the chat", async () => {
     storage.setItem(STORAGE_KEY, "not json");
     const store = createLocalStorageChatHistoryStore({ key: STORAGE_KEY, storage });

@@ -18,6 +18,7 @@ import {
 } from "@/components/ai-elements/conversation";
 import {
   PromptInput,
+  PromptInputFooter,
   type PromptInputMessage,
   PromptInputSubmit,
   PromptInputTextarea,
@@ -31,6 +32,8 @@ import { UNTITLED_CHAT_TITLE } from "@/lib/chat-history/store";
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
 import { ChatHistoryPanel } from "./chat-history-panel";
+import { MAX_SANDBOX_FILE_BYTES, createSandboxFileMessage } from "./sandbox-file";
+import { SandboxUploadControl } from "./sandbox-upload-control";
 
 const BETA_TERMS_HREF = "https://vercel.com/docs/release-phases/public-beta-agreement";
 const SUGGESTIONS = [
@@ -64,6 +67,8 @@ export function AgentChatSession({
   const titleRef = useRef(chat.title);
   const persistedCursorRef = useRef(`${chat.events.length}:${chat.session.streamIndex}`);
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const agent = useEveAgent({
     initialEvents: chat.events,
     initialSession: chat.session,
@@ -79,6 +84,7 @@ export function AgentChatSession({
     },
   });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
+  const isSubmitting = isBusy || isUploading;
   const isEmpty = agent.data.messages.length === 0;
   const lastUserMessageIndex = agent.data.messages.findLastIndex(
     (message) => message.role === "user",
@@ -119,28 +125,78 @@ export function AgentChatSession({
 
   const handleSubmit = async (message: PromptInputMessage) => {
     const text = message.text.trim();
-    if (!text || isBusy) return;
+    const file = message.files[0];
+    if ((!text && !file) || isSubmitting) return;
 
-    clientLog.info({ event: "agent.message_submitted", messageLength: text.length });
-    await sendMessage(text);
+    if (!file) {
+      clientLog.info({ event: "agent.message_submitted", messageLength: text.length });
+      await sendMessage(text);
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+    let content: Awaited<ReturnType<typeof createSandboxFileMessage>>;
+    try {
+      content = await createSandboxFileMessage({ file, text });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "The file could not be uploaded.";
+      setUploadError(message);
+      clientLog.error({ diagnosticCode: "EVE_R002", event: "agent.file_submit_failed" });
+      return;
+    } finally {
+      setIsUploading(false);
+    }
+
+    const title = text || file.filename || "Uploaded file";
+    if (chat.title === UNTITLED_CHAT_TITLE) {
+      titleRef.current = createChatTitle(title);
+    }
+    clientLog.info({
+      event: "agent.file_submitted",
+      fileSizeLimit: MAX_SANDBOX_FILE_BYTES,
+      messageLength: text.length,
+    });
+    await agent.send({ message: content });
   };
 
   const composer = (
-    <PromptInput
-      className="rounded-md border-gray-400 bg-background shadow-[0_2px_2px_rgba(0,0,0,0.04)] focus-within:border-gray-600"
-      onSubmit={handleSubmit}
-    >
-      <PromptInputTextarea
-        aria-label="Message Eve"
-        className="min-h-24 px-4 py-3 pr-14 text-[16px] leading-6 placeholder:text-gray-700 sm:text-sm"
-        placeholder="Ask Eve anything…"
-      />
-      <PromptInputSubmit
-        className="right-3 bottom-3 rounded-md"
-        onStop={agent.stop}
-        status={agent.status}
-      />
-    </PromptInput>
+    <div>
+      <PromptInput
+        className="rounded-md border-gray-400 bg-background shadow-[0_2px_2px_rgba(0,0,0,0.04)] focus-within:border-gray-600"
+        maxFiles={1}
+        maxFileSize={MAX_SANDBOX_FILE_BYTES}
+        onError={({ code, message }) => {
+          setUploadError(
+            code === "max_file_size" ? "Files must be 3 MiB or smaller." : message,
+          );
+        }}
+        onSubmit={handleSubmit}
+      >
+        <PromptInputTextarea
+          aria-label="Message Eve"
+          className="min-h-24 px-4 py-3 pr-14 text-[16px] leading-6 placeholder:text-gray-700 sm:text-sm"
+          placeholder="Ask Eve anything…"
+        />
+        <PromptInputFooter className="pr-12">
+          <SandboxUploadControl
+            disabled={isSubmitting}
+            onClearError={() => setUploadError(null)}
+          />
+        </PromptInputFooter>
+        <PromptInputSubmit
+          className="right-3 bottom-3 rounded-md"
+          disabled={isUploading}
+          onStop={agent.stop}
+          status={isUploading ? "submitted" : agent.status}
+        />
+      </PromptInput>
+      {uploadError ? (
+        <p className="mt-2 text-xs text-red-900" role="alert">
+          {uploadError}
+        </p>
+      ) : null}
+    </div>
   );
 
   return (
@@ -154,7 +210,7 @@ export function AgentChatSession({
           <ChatHistoryPanel
             activeId={chat.id}
             chats={chats}
-            disabled={isBusy}
+            disabled={isSubmitting}
             historyAvailable={historyAvailable}
             onCreateChat={() => void onCreateChat()}
             onRemoveChat={(id) => void onRemoveChat(id)}
@@ -190,7 +246,7 @@ export function AgentChatSession({
                     <XIcon aria-hidden="true" />
                   </Button>
                 }
-                disabled={isBusy}
+                disabled={isSubmitting}
                 historyAvailable={historyAvailable}
                 onCreateChat={() => {
                   setHistoryOpen(false);
@@ -301,7 +357,7 @@ export function AgentChatSession({
                 {SUGGESTIONS.map((suggestion) => (
                   <button
                     className="group flex min-h-10 items-center justify-between rounded-md border border-gray-400 bg-background px-3 text-left text-sm text-gray-900 transition-colors hover:border-gray-500 hover:bg-gray-100 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isBusy}
+                    disabled={isSubmitting}
                     key={suggestion}
                     onClick={() => {
                       clientLog.info({
@@ -327,7 +383,7 @@ export function AgentChatSession({
             <ConversationContent className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6 sm:py-10">
               {agent.data.messages.map((message, index, messages) => (
                 <AgentMessage
-                  canRespond={!isBusy && index > lastUserMessageIndex}
+                  canRespond={!isSubmitting && index > lastUserMessageIndex}
                   isStreaming={agent.status === "streaming" && index === messages.length - 1}
                   key={message.id}
                   message={message}

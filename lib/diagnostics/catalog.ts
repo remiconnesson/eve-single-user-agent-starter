@@ -22,6 +22,10 @@ export const diagnostics = defineDiagnostics({
       why: "The agent could not complete the request.",
       fix: "Open Diagnostics, copy the support report, then retry the request once.",
     },
+    EVE_R002: {
+      why: "A file could not be uploaded to the sandbox.",
+      fix: "Choose one file no larger than 3 MiB, then retry the upload.",
+    },
   },
 });
 
@@ -51,6 +55,8 @@ export function getPublicDiagnostic(code: string | undefined): PublicDiagnostic 
       return toPublicDiagnostic(diagnostics.EVE_C004());
     case "EVE_R001":
       return toPublicDiagnostic(diagnostics.EVE_R001());
+    case "EVE_R002":
+      return toPublicDiagnostic(diagnostics.EVE_R002());
     default:
       return undefined;
   }

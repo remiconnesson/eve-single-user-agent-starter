@@ -1,6 +1,7 @@
 "use client";
 
 import type { EveDynamicToolPart, EveMessage, EveMessagePart } from "eve/react";
+import { DownloadIcon, FileIcon } from "lucide-react";
 import { CodeBlock } from "@/components/ai-elements/code-block";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
@@ -22,6 +23,12 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { Button } from "@/components/ui/button";
+import {
+  type SandboxFileArtifact,
+  parseDownloadFileOutput,
+  parseGeneratedImageOutput,
+  sandboxFileDataUrl,
+} from "./sandbox-file";
 
 export type AgentInputResponse = {
   readonly optionId?: string;
@@ -104,28 +111,108 @@ function AgentMessagePart({
         );
       }
 
-      return (
-        <Tool
-          defaultOpen={part.state === "approval-requested" || part.state === "approval-responded"}
-        >
-          <ToolHeader
-            state={part.state}
-            title={part.toolName}
-            toolName={part.toolName}
-            type="dynamic-tool"
-          />
-          <ToolContent>
-            <ToolInput input={part.input} />
-            <InputRequestActions
-              canRespond={canRespond}
-              part={part}
-              onInputResponses={onInputResponses}
-            />
-            <ToolOutput errorText={part.errorText} output={part.output} />
-          </ToolContent>
-        </Tool>
-      );
+      {
+        const artifact = artifactFromToolPart(part);
+
+        return (
+          <>
+            <Tool
+              defaultOpen={
+                part.state === "approval-requested" || part.state === "approval-responded"
+              }
+            >
+              <ToolHeader
+                state={part.state}
+                title={part.toolName}
+                toolName={part.toolName}
+                type="dynamic-tool"
+              />
+              <ToolContent>
+                <ToolInput input={part.input} />
+                <InputRequestActions
+                  canRespond={canRespond}
+                  part={part}
+                  onInputResponses={onInputResponses}
+                />
+                <ToolOutput
+                  errorText={part.errorText}
+                  output={artifact ? undefined : part.output}
+                />
+              </ToolContent>
+            </Tool>
+            {artifact ? (
+              part.toolName === "generate_image" ? (
+                <GeneratedImage artifact={artifact} />
+              ) : (
+                <DownloadFile artifact={artifact} />
+              )
+            ) : null}
+          </>
+        );
+      }
   }
+}
+
+function artifactFromToolPart(part: EveDynamicToolPart): SandboxFileArtifact | null {
+  if (part.state !== "output-available") return null;
+  if (part.toolName === "generate_image") return parseGeneratedImageOutput(part.output);
+  if (part.toolName === "download_file") return parseDownloadFileOutput(part.output);
+  return null;
+}
+
+function GeneratedImage({ artifact }: { readonly artifact: SandboxFileArtifact }) {
+  const dataUrl = sandboxFileDataUrl(artifact);
+
+  return (
+    <figure className="not-prose overflow-hidden rounded-md border bg-gray-100">
+      {/* This authenticated, in-memory tool result is not an addressable Next.js image. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt="Generated image"
+        className="max-h-[32rem] w-full object-contain"
+        loading="lazy"
+        src={dataUrl}
+      />
+      <figcaption className="flex items-center justify-between gap-3 border-t bg-background p-3">
+        <span className="min-w-0 truncate font-mono text-xs text-gray-900">
+          {artifact.path}
+        </span>
+        <Button asChild size="sm" variant="outline">
+          <a download={artifact.filename} href={dataUrl}>
+            <DownloadIcon aria-hidden="true" />
+            Download image
+          </a>
+        </Button>
+      </figcaption>
+    </figure>
+  );
+}
+
+function DownloadFile({ artifact }: { readonly artifact: SandboxFileArtifact }) {
+  return (
+    <div className="not-prose flex items-center justify-between gap-3 rounded-md border bg-background p-3">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="grid size-8 shrink-0 place-items-center rounded-md bg-gray-100">
+          <FileIcon aria-hidden="true" className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium">{artifact.filename}</p>
+          <p className="font-mono text-xs text-gray-800">{formatByteLength(artifact.byteLength)}</p>
+        </div>
+      </div>
+      <Button asChild size="sm" variant="outline">
+        <a download={artifact.filename} href={sandboxFileDataUrl(artifact)}>
+          <DownloadIcon aria-hidden="true" />
+          Download {artifact.filename}
+        </a>
+      </Button>
+    </div>
+  );
+}
+
+function formatByteLength(byteLength: number): string {
+  if (byteLength < 1024) return `${byteLength} B`;
+  return `${(byteLength / 1024).toFixed(1)} KiB`;
 }
 
 function SandboxTool({
