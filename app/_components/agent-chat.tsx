@@ -4,7 +4,6 @@ import { useEveAgent } from "eve/react";
 import { log as clientLog } from "evlog/next/client";
 import {
   AlertCircleIcon,
-  ArrowRightIcon,
   LogOutIcon,
   TerminalIcon,
 } from "lucide-react";
@@ -41,12 +40,6 @@ import { SandboxUploadControl } from "./sandbox-upload-control";
 const BETA_TERMS_HREF = "https://vercel.com/docs/release-phases/public-beta-agreement";
 const AGENT_REQUEST_DIAGNOSTIC = toDiagnosticLogFields(diagnostics.EVE_R001());
 const FILE_UPLOAD_DIAGNOSTIC = toDiagnosticLogFields(diagnostics.EVE_R002());
-const SUGGESTIONS = [
-  "Inspect This Project",
-  "Write a Small Script",
-  "Research a Topic",
-  "Run a Sandbox Command",
-] as const;
 
 type AgentStatus = ReturnType<typeof useEveAgent>["status"];
 
@@ -322,30 +315,6 @@ export function AgentChatSession({
               </div>
 
               {composer}
-
-              <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                {SUGGESTIONS.map((suggestion) => (
-                  <button
-                    className="group flex min-h-10 items-center justify-between rounded-md border border-gray-400 bg-background px-3 text-left text-sm text-gray-900 transition-colors hover:border-gray-500 hover:bg-gray-100 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isSubmitting}
-                    key={suggestion}
-                    onClick={() => {
-                      clientLog.info({
-                        event: "agent.suggestion_submitted",
-                        messageLength: suggestion.length,
-                      });
-                      void sendMessage(suggestion);
-                    }}
-                    type="button"
-                  >
-                    <span>{suggestion}</span>
-                    <ArrowRightIcon
-                      aria-hidden="true"
-                      className="size-3.5 text-gray-700 transition-transform group-hover:translate-x-0.5 group-hover:text-foreground motion-reduce:transform-none"
-                    />
-                  </button>
-                ))}
-              </div>
             </div>
           </div>
         ) : (
