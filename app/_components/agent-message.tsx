@@ -1,0 +1,290 @@
+"use client";
+
+import type { EveDynamicToolPart, EveMessage, EveMessagePart } from "eve/react";
+import { CodeBlock } from "@/components/ai-elements/code-block";
+import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
+import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
+import {
+  Sandbox,
+  SandboxContent,
+  SandboxHeader,
+  SandboxTabContent,
+  SandboxTabs,
+  SandboxTabsBar,
+  SandboxTabsList,
+  SandboxTabsTrigger,
+} from "@/components/ai-elements/sandbox";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
+import { Button } from "@/components/ui/button";
+
+export type AgentInputResponse = {
+  readonly optionId?: string;
+  readonly requestId: string;
+  readonly text?: string;
+};
+
+export function AgentMessage({
+  canRespond,
+  isStreaming,
+  message,
+  onInputResponses,
+}: {
+  readonly canRespond: boolean;
+  readonly isStreaming: boolean;
+  readonly message: EveMessage;
+  readonly onInputResponses: (responses: readonly AgentInputResponse[]) => void | Promise<void>;
+}) {
+  const lastTextIndex = message.parts.reduce(
+    (last, part, index) => (part.type === "text" ? index : last),
+    -1,
+  );
+
+  return (
+    <Message
+      data-optimistic={message.metadata?.optimistic ? "true" : undefined}
+      from={message.role}
+    >
+      <MessageContent>
+        {message.parts.map((part, index) => (
+          <AgentMessagePart
+            canRespond={canRespond}
+            key={partKey(part, index)}
+            onInputResponses={onInputResponses}
+            part={part}
+            showCaret={isStreaming && message.role === "assistant" && index === lastTextIndex}
+          />
+        ))}
+      </MessageContent>
+    </Message>
+  );
+}
+
+function AgentMessagePart({
+  canRespond,
+  onInputResponses,
+  part,
+  showCaret,
+}: {
+  readonly canRespond: boolean;
+  readonly onInputResponses: (responses: readonly AgentInputResponse[]) => void | Promise<void>;
+  readonly part: EveMessagePart;
+  readonly showCaret: boolean;
+}) {
+  switch (part.type) {
+    case "step-start":
+      return null;
+    case "text":
+      return (
+        <MessageResponse caret="block" isAnimating={showCaret}>
+          {part.text}
+        </MessageResponse>
+      );
+    case "reasoning":
+      return (
+        <Reasoning defaultOpen isStreaming={part.state === "streaming"}>
+          <ReasoningTrigger />
+          <ReasoningContent>{part.text}</ReasoningContent>
+        </Reasoning>
+      );
+    case "dynamic-tool":
+      if (part.toolName === "bash") {
+        return (
+          <SandboxTool
+            canRespond={canRespond}
+            onInputResponses={onInputResponses}
+            part={part}
+          />
+        );
+      }
+
+      return (
+        <Tool
+          defaultOpen={part.state === "approval-requested" || part.state === "approval-responded"}
+        >
+          <ToolHeader
+            state={part.state}
+            title={part.toolName}
+            toolName={part.toolName}
+            type="dynamic-tool"
+          />
+          <ToolContent>
+            <ToolInput input={part.input} />
+            <InputRequestActions
+              canRespond={canRespond}
+              part={part}
+              onInputResponses={onInputResponses}
+            />
+            <ToolOutput errorText={part.errorText} output={part.output} />
+          </ToolContent>
+        </Tool>
+      );
+  }
+}
+
+function SandboxTool({
+  canRespond,
+  onInputResponses,
+  part,
+}: {
+  readonly canRespond: boolean;
+  readonly onInputResponses: (responses: readonly AgentInputResponse[]) => void | Promise<void>;
+  readonly part: EveDynamicToolPart;
+}) {
+  const isComplete = part.state === "output-available" || part.state === "output-error";
+
+  return (
+    <Sandbox>
+      <SandboxHeader state={part.state} title="Sandbox" />
+      <SandboxContent>
+        <SandboxTabs defaultValue={isComplete ? "output" : "command"} key={part.state}>
+          <SandboxTabsBar>
+            <SandboxTabsList>
+              <SandboxTabsTrigger value="command">Command</SandboxTabsTrigger>
+              <SandboxTabsTrigger value="output">Output</SandboxTabsTrigger>
+            </SandboxTabsList>
+          </SandboxTabsBar>
+          <SandboxTabContent value="command">
+            <CodeBlock code={bashCommand(part.input)} language="bash" />
+          </SandboxTabContent>
+          <SandboxTabContent value="output">
+            <CodeBlock code={bashOutput(part)} language="log" />
+          </SandboxTabContent>
+        </SandboxTabs>
+        {part.toolMetadata?.eve?.inputRequest ? (
+          <div className="p-3">
+            <InputRequestActions
+              canRespond={canRespond}
+              onInputResponses={onInputResponses}
+              part={part}
+            />
+          </div>
+        ) : null}
+      </SandboxContent>
+    </Sandbox>
+  );
+}
+
+function bashCommand(input: unknown): string {
+  if (
+    typeof input === "object" &&
+    input !== null &&
+    "command" in input &&
+    typeof input.command === "string"
+  ) {
+    return input.command;
+  }
+
+  return formatUnknown(input);
+}
+
+function bashOutput(part: EveDynamicToolPart): string {
+  if (part.state === "output-error") {
+    return part.errorText;
+  }
+
+  if (part.state !== "output-available") {
+    return "Waiting for output…";
+  }
+
+  const output = part.output;
+  if (typeof output !== "object" || output === null) {
+    return formatUnknown(output);
+  }
+
+  const lines: string[] = [];
+  if ("stdout" in output && typeof output.stdout === "string" && output.stdout.length > 0) {
+    lines.push(output.stdout.trimEnd());
+  }
+  if ("stderr" in output && typeof output.stderr === "string" && output.stderr.length > 0) {
+    lines.push(output.stderr.trimEnd());
+  }
+  if ("exitCode" in output && typeof output.exitCode === "number") {
+    lines.push(`exit ${output.exitCode}`);
+  }
+
+  return lines.length > 0 ? lines.join("\n\n") : formatUnknown(output);
+}
+
+function formatUnknown(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (value === undefined) {
+    return "";
+  }
+
+  try {
+    return JSON.stringify(value, null, 2) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function InputRequestActions({
+  canRespond,
+  onInputResponses,
+  part,
+}: {
+  readonly canRespond: boolean;
+  readonly onInputResponses: (responses: readonly AgentInputResponse[]) => void | Promise<void>;
+  readonly part: EveDynamicToolPart;
+}) {
+  const inputRequest = part.toolMetadata?.eve?.inputRequest;
+  if (!inputRequest) {
+    return null;
+  }
+
+  const inputResponse = part.toolMetadata?.eve?.inputResponse;
+  const selectedOption = inputRequest.options?.find(
+    (option) => option.id === inputResponse?.optionId,
+  );
+
+  return (
+    <div className="space-y-3 rounded-md border border-yellow-500/30 bg-yellow-500/5 p-3">
+      <p className="text-muted-foreground text-sm">{inputRequest.prompt}</p>
+      {inputResponse ? (
+        <p className="font-medium text-sm">
+          Responded: {selectedOption?.label ?? inputResponse.text ?? inputResponse.optionId}
+        </p>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {inputRequest.options?.map((option) => (
+            <Button
+              disabled={!canRespond}
+              key={option.id}
+              onClick={() => {
+                void onInputResponses([
+                  {
+                    optionId: option.id,
+                    requestId: inputRequest.requestId,
+                  },
+                ]);
+              }}
+              size="sm"
+              type="button"
+              variant={option.style === "danger" ? "destructive" : "default"}
+            >
+              {option.label}
+            </Button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function partKey(part: EveMessagePart, index: number): string {
+  switch (part.type) {
+    case "dynamic-tool":
+      return part.toolCallId;
+    default:
+      return `${part.type}:${index}`;
+  }
+}
