@@ -21,4 +21,19 @@ describe("diagnostic log fields", () => {
     expect(getDiagnosticLogFields("ATTACKER_001")).toBeUndefined();
     expect(getDiagnosticLogFields({ code: "EVE_R001" })).toBeUndefined();
   });
+
+  it("resolves every registered diagnostic without a parallel code list", () => {
+    for (const [code, createDiagnostic] of Object.entries(diagnostics)) {
+      expect(getDiagnosticLogFields(code)).toEqual(
+        toDiagnosticLogFields(createDiagnostic()),
+      );
+    }
+  });
+
+  it.each(["__proto__", "constructor", "hasOwnProperty", "toString"])(
+    "rejects inherited object key %s",
+    (code) => {
+      expect(getDiagnosticLogFields(code)).toBeUndefined();
+    },
+  );
 });

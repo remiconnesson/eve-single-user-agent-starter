@@ -47,18 +47,13 @@ export function toDiagnosticLogFields(diagnostic: Diagnostic): DiagnosticLogFiel
 }
 
 export function getDiagnosticLogFields(code: unknown): DiagnosticLogFields | undefined {
-  switch (code) {
-    case "EVE_C001":
-      return toDiagnosticLogFields(diagnostics.EVE_C001());
-    case "EVE_C003":
-      return toDiagnosticLogFields(diagnostics.EVE_C003());
-    case "EVE_C004":
-      return toDiagnosticLogFields(diagnostics.EVE_C004());
-    case "EVE_R001":
-      return toDiagnosticLogFields(diagnostics.EVE_R001());
-    case "EVE_R002":
-      return toDiagnosticLogFields(diagnostics.EVE_R002());
-    default:
-      return undefined;
-  }
+  if (typeof code !== "string" || !hasOwn(diagnostics, code)) return undefined;
+  return toDiagnosticLogFields(diagnostics[code]());
+}
+
+function hasOwn<ObjectType extends object>(
+  value: ObjectType,
+  key: PropertyKey,
+): key is keyof ObjectType {
+  return Object.hasOwn(value, key);
 }
