@@ -167,10 +167,12 @@ describe("AgentChat input requests", () => {
     expect(html).toContain("Saved in this browser");
   });
 
-  it("offers a sandbox file upload in the composer", () => {
+  it("offers a multi-file queue outside the prompt form", () => {
     const html = renderChat();
 
-    expect(html).toContain('aria-label="Upload file to sandbox"');
-    expect(html).toContain('title="Upload one file, up to 3 MiB"');
+    expect(html).toContain('aria-label="Add files to sandbox"');
+    expect(html).toContain('title="Add up to 5 files, 1 MiB each"');
+    expect(html).toMatch(/data-user-upload-queue="true"[\s\S]*<form/u);
+    expect(html).not.toContain('aria-label="Upload files"');
   });
 });

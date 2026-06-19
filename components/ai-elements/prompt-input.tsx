@@ -453,6 +453,8 @@ export interface PromptInputMessage {
 }
 
 export type PromptInputProps = Omit<HTMLAttributes<HTMLFormElement>, "onSubmit" | "onError"> & {
+  // Disable when file selection is owned by a separate control.
+  allowFileUploads?: boolean;
   // e.g., "image/*" or leave undefined for any
   accept?: string;
   multiple?: boolean;
@@ -473,6 +475,7 @@ export type PromptInputProps = Omit<HTMLAttributes<HTMLFormElement>, "onSubmit" 
 
 export const PromptInput = ({
   className,
+  allowFileUploads = true,
   accept,
   multiple,
   globalDrop,
@@ -509,8 +512,9 @@ export const PromptInput = ({
   }, [files]);
 
   const openFileDialogLocal = useCallback(() => {
+    if (!allowFileUploads) return;
     inputRef.current?.click();
-  }, []);
+  }, [allowFileUploads]);
 
   const matchesAccept = useCallback(
     (f: File) => {
@@ -537,6 +541,7 @@ export const PromptInput = ({
 
   const addLocal = useCallback(
     (fileList: File[] | FileList) => {
+      if (!allowFileUploads) return;
       const incoming = [...fileList];
       const accepted = incoming.filter((f) => matchesAccept(f));
       if (incoming.length && accepted.length === 0) {
@@ -579,7 +584,7 @@ export const PromptInput = ({
         return [...prev, ...next];
       });
     },
-    [matchesAccept, maxFiles, maxFileSize, onError],
+    [allowFileUploads, matchesAccept, maxFiles, maxFileSize, onError],
   );
 
   const removeLocal = useCallback(
@@ -597,6 +602,7 @@ export const PromptInput = ({
   // Wrapper that validates files before calling provider's add
   const addWithProviderValidation = useCallback(
     (fileList: File[] | FileList) => {
+      if (!allowFileUploads) return;
       const incoming = [...fileList];
       const accepted = incoming.filter((f) => matchesAccept(f));
       if (incoming.length && accepted.length === 0) {
@@ -631,7 +637,15 @@ export const PromptInput = ({
         controller?.attachments.add(capped);
       }
     },
-    [matchesAccept, maxFileSize, maxFiles, onError, files.length, controller],
+    [
+      allowFileUploads,
+      matchesAccept,
+      maxFileSize,
+      maxFiles,
+      onError,
+      files.length,
+      controller,
+    ],
   );
 
   const clearAttachments = useCallback(
@@ -680,6 +694,7 @@ export const PromptInput = ({
 
   // Attach drop handlers on nearest form and document (opt-in)
   useEffect(() => {
+    if (!allowFileUploads) return;
     const form = formRef.current;
     if (!form) {
       return;
@@ -708,10 +723,10 @@ export const PromptInput = ({
       form.removeEventListener("dragover", onDragOver);
       form.removeEventListener("drop", onDrop);
     };
-  }, [add, globalDrop]);
+  }, [add, allowFileUploads, globalDrop]);
 
   useEffect(() => {
-    if (!globalDrop) {
+    if (!allowFileUploads || !globalDrop) {
       return;
     }
 
@@ -734,7 +749,7 @@ export const PromptInput = ({
       document.removeEventListener("dragover", onDragOver);
       document.removeEventListener("drop", onDrop);
     };
-  }, [add, globalDrop]);
+  }, [add, allowFileUploads, globalDrop]);
 
   useEffect(
     () => () => {
@@ -851,16 +866,18 @@ export const PromptInput = ({
   // Render with or without local provider
   const inner = (
     <>
-      <input
-        accept={accept}
-        aria-label="Upload files"
-        className="hidden"
-        multiple={multiple}
-        onChange={handleChange}
-        ref={inputRef}
-        title="Upload files"
-        type="file"
-      />
+      {allowFileUploads ? (
+        <input
+          accept={accept}
+          aria-label="Upload files"
+          className="hidden"
+          multiple={multiple}
+          onChange={handleChange}
+          ref={inputRef}
+          title="Upload files"
+          type="file"
+        />
+      ) : null}
       <form className="w-full" onSubmit={handleSubmit} ref={formRef} {...props}>
         <InputGroup
           className={cn(

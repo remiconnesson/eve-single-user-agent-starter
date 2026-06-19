@@ -37,7 +37,9 @@ Search uses the same Gateway authentication as the agent. It needs no additional
 
 ## Sandbox files and image generation
 
-Use the paperclip in the prompt to attach one file up to 3 MiB. Eve sends it directly to the current durable sandbox; this starter does not use Blob or another external file store. The cap keeps the base64-encoded request below Vercel's 4.5 MB function payload limit. Ask the agent to inspect, transform, or run commands against the uploaded file.
+Use **Add files** above the prompt to queue up to five files. Each file can be 1 MiB and the batch can be 3 MiB. Adding or removing a file does not send a chat message. Eve uploads the queue with the next text prompt, so several files still produce one agent turn. The starter sends files directly to the durable sandbox and does not use Blob or another external file store.
+
+Eve stores uploads at content-addressed paths under `/workspace/user_uploads/originals/`. The agent treats these files as immutable. If a request requires changes, it copies the original to the matching path under `/workspace/user_uploads/copies/` and edits that copy. `/workspace/user_uploads/manifest.json` records every upload in the session. The file size limits keep the base64-encoded request below Vercel's 4.5 MB function payload limit.
 
 The `generate_image` tool uses [OpenAI GPT Image 2](https://developers.openai.com/api/docs/models/gpt-image-2) through AI Gateway, saves the result under `/workspace/generated`, and renders the image with a download action in chat. It uses the same Gateway authentication as the main agent and needs no separate OpenAI API key.
 

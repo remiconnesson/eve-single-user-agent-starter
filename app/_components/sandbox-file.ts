@@ -1,4 +1,9 @@
-import type { FilePart, FileUIPart, UserContent } from "ai";
+import type { FilePart, UserContent } from "ai";
+import {
+  MAX_USER_UPLOAD_FILE_BYTES,
+  MAX_USER_UPLOAD_FILES,
+  MAX_USER_UPLOAD_TOTAL_BYTES,
+} from "@/lib/user-uploads/constants";
 
 // The file becomes base64 inside Eve's JSON request and tool result.
 export const MAX_SANDBOX_FILE_BYTES = 3 * 1024 * 1024;
@@ -14,39 +19,63 @@ export interface SandboxFileArtifact {
 }
 
 export async function createSandboxFileMessage({
-  file,
+  files,
   text,
 }: {
-  readonly file: FileUIPart;
+  readonly files: readonly File[];
   readonly text: string;
 }): Promise<UserContent> {
-  const response = await fetch(file.url);
-  if (!response.ok) {
-    throw new Error("The selected file could not be read.");
+  const instruction = text.trim();
+  if (!instruction) throw new Error("Enter a message before sending uploaded files.");
+  validateUserUploadFiles(files);
+
+  const fileParts = await Promise.all(
+    files.map(async (file): Promise<FilePart> => {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      const filename = sanitizeUploadFilename(file.name);
+      const mediaType = isValidMediaType(file.type)
+        ? file.type
+        : "application/octet-stream";
+      return {
+        data: `data:${mediaType};base64,${bytesToBase64(bytes)}`,
+        filename,
+        mediaType,
+        type: "file",
+      };
+    }),
+  );
+
+  return [{ text: instruction, type: "text" }, ...fileParts];
+}
+
+export function validateUserUploadFiles(files: readonly File[]): void {
+  if (files.length > MAX_USER_UPLOAD_FILES) {
+    throw new Error(`Add up to ${MAX_USER_UPLOAD_FILES} files at a time.`);
   }
 
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  if (bytes.byteLength > MAX_SANDBOX_FILE_BYTES) {
-    throw new Error("Files uploaded to the sandbox must be 3 MiB or smaller.");
+  let totalBytes = 0;
+  for (const file of files) {
+    if (file.size > MAX_USER_UPLOAD_FILE_BYTES) {
+      throw new Error(`"${file.name || "File"}" must be 1 MiB or smaller.`);
+    }
+    totalBytes += file.size;
   }
+  if (totalBytes > MAX_USER_UPLOAD_TOTAL_BYTES) {
+    throw new Error("Files must be 3 MiB or smaller in total.");
+  }
+}
 
-  const candidateFilename = file.filename?.trim();
-  const filename = isValidFilename(candidateFilename) ? candidateFilename : "upload";
-  const candidateMediaType = file.mediaType?.trim();
-  const mediaType = isValidMediaType(candidateMediaType)
-    ? candidateMediaType
-    : "application/octet-stream";
-  const instruction =
-    text.trim() || `Use the uploaded file "${filename}" from the sandbox and confirm its path.`;
-
-  const filePart = {
-    data: `data:${mediaType};base64,${bytesToBase64(bytes)}`,
-    filename,
-    mediaType,
-    type: "file",
-  } satisfies FilePart;
-
-  return [{ text: instruction, type: "text" }, filePart];
+export function mergeUserUploadFiles(
+  current: readonly File[],
+  selected: readonly File[],
+): File[] {
+  const files = new Map<string, File>();
+  for (const file of [...current, ...selected]) {
+    files.set(`${file.name}:${file.size}:${file.lastModified}:${file.type}`, file);
+  }
+  const merged = [...files.values()];
+  validateUserUploadFiles(merged);
+  return merged;
 }
 
 export function parseDownloadFileOutput(output: unknown): SandboxFileArtifact | null {
@@ -107,6 +136,12 @@ function isValidFilename(value: unknown): value is string {
     !value.includes("\\") &&
     !/[\u0000-\u001f\u007f]/u.test(value)
   );
+}
+
+function sanitizeUploadFilename(value: string): string {
+  const basename = value.split("/").at(-1)?.split("\\").at(-1) ?? "";
+  const safe = basename.replace(/[^\w.-]+/gu, "_");
+  return isValidFilename(safe) && safe !== "." && safe !== ".." ? safe : "upload";
 }
 
 function isValidMediaType(value: unknown): value is string {
