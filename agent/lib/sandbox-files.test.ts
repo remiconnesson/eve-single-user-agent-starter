@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { describe, expect, it } from "vitest";
 import {
   MAX_SANDBOX_FILE_BYTES,
@@ -66,6 +67,23 @@ describe("downloadSandboxFile", () => {
       filename: "hello.txt",
       mediaType: "text/plain",
       path: "/workspace/reports/hello.txt",
+    });
+  });
+
+  it("adapts Vercel's Node file stream to the download contract", async () => {
+    const content = Buffer.from("vercel stream");
+    const result = await downloadSandboxFile({
+      path: normalizeSandboxFilePath("reports/vercel.txt"),
+      sandbox: {
+        readFile: async () => Readable.from([content]),
+      },
+    });
+
+    expect(result).toMatchObject({
+      byteLength: content.byteLength,
+      dataBase64: content.toString("base64"),
+      filename: "vercel.txt",
+      mediaType: "text/plain",
     });
   });
 
