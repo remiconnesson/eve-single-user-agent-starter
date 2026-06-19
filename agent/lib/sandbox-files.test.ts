@@ -7,6 +7,15 @@ import {
   sandboxFilePathSchema,
 } from "./sandbox-files";
 
+function fileStream(...chunks: readonly Uint8Array[]): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk);
+      controller.close();
+    },
+  });
+}
+
 describe("normalizeSandboxFilePath", () => {
   it("anchors a relative path under /workspace", () => {
     expect(normalizeSandboxFilePath("reports/output.csv")).toBe(
@@ -47,7 +56,7 @@ describe("downloadSandboxFile", () => {
     const result = await downloadSandboxFile({
       path: normalizeSandboxFilePath("reports/hello.txt"),
       sandbox: {
-        readBinaryFile: async () => content,
+        readFile: async () => fileStream(content.subarray(0, 2), content.subarray(2)),
       },
     });
 
@@ -64,7 +73,7 @@ describe("downloadSandboxFile", () => {
     const result = await downloadSandboxFile({
       path: normalizeSandboxFilePath("archive.unknown"),
       sandbox: {
-        readBinaryFile: async () => Buffer.from([0, 1, 2]),
+        readFile: async () => fileStream(Buffer.from([0, 1, 2])),
       },
     });
 
@@ -75,7 +84,7 @@ describe("downloadSandboxFile", () => {
     const promise = downloadSandboxFile({
       path: normalizeSandboxFilePath("missing.txt"),
       sandbox: {
-        readBinaryFile: async () => null,
+        readFile: async () => null,
       },
     });
 
@@ -86,7 +95,8 @@ describe("downloadSandboxFile", () => {
     const promise = downloadSandboxFile({
       path: normalizeSandboxFilePath("large.bin"),
       sandbox: {
-        readBinaryFile: async () => new Uint8Array(MAX_SANDBOX_FILE_BYTES + 1),
+        readFile: async () =>
+          fileStream(new Uint8Array(MAX_SANDBOX_FILE_BYTES), new Uint8Array(1)),
       },
     });
 

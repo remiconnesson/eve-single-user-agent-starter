@@ -124,24 +124,25 @@ export async function downloadSandboxFile({
   sandbox,
 }: {
   readonly path: SandboxFilePath;
-  readonly sandbox: Pick<SandboxSession, "readBinaryFile">;
+  readonly sandbox: Pick<SandboxSession, "readFile">;
 }): Promise<SandboxFileDownload> {
-  let content: Uint8Array | null;
+  let stream: ReadableStream<Uint8Array> | null;
   try {
-    content = await sandbox.readBinaryFile({ path });
+    stream = await sandbox.readFile({ path });
   } catch {
     throw new SandboxFileError({ code: "unreadable", path });
   }
 
-  if (content === null) {
+  if (stream === null) {
     throw new SandboxFileError({ code: "not-found", path });
   }
-  if (content.byteLength > MAX_SANDBOX_FILE_BYTES) {
-    throw new SandboxFileError({
-      byteLength: content.byteLength,
-      code: "too-large",
-      limit: MAX_SANDBOX_FILE_BYTES,
-    });
+
+  let content: Uint8Array;
+  try {
+    content = await readSandboxFileStream(stream);
+  } catch (error) {
+    if (error instanceof SandboxFileError) throw error;
+    throw new SandboxFileError({ code: "unreadable", path });
   }
 
   const metadata = getSandboxFileMetadata(path);
@@ -152,6 +153,42 @@ export async function downloadSandboxFile({
     mediaType: metadata.mediaType,
     path,
   });
+}
+
+async function readSandboxFileStream(
+  stream: ReadableStream<Uint8Array>,
+): Promise<Uint8Array> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let byteLength = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      byteLength += value.byteLength;
+      if (byteLength > MAX_SANDBOX_FILE_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        throw new SandboxFileError({
+          byteLength,
+          code: "too-large",
+          limit: MAX_SANDBOX_FILE_BYTES,
+        });
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const content = new Uint8Array(byteLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    content.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return content;
 }
 
 function relativePathProblem(value: string): string | null {
