@@ -102,12 +102,14 @@ export function AgentChat({ model }: { readonly model: string }) {
               {model}
             </span>
             <StatusIndicator status={agent.status} />
-            <a
-              className="whitespace-nowrap text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-              href="/diagnostics"
-            >
-              Diagnostics
-            </a>
+            {agent.error ? (
+              <a
+                className="whitespace-nowrap text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                href="/diagnostics"
+              >
+                Diagnostics
+              </a>
+            ) : null}
             <form action="/api/auth/logout" method="post">
               <button
                 className="whitespace-nowrap text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
