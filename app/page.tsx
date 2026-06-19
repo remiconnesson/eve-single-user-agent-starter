@@ -1,4 +1,4 @@
-import { AgentChat } from "@/app/_components/agent-chat";
+import { AgentChat } from "@/app/_components/chat-history-shell";
 import agent from "@/agent/agent";
 import { requireAuthenticatedPage } from "@/lib/auth/page";
 
