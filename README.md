@@ -63,18 +63,18 @@ This starter includes application-level protection so the production domain can 
 
 This is intentionally single-user access, not an account system. Use a long, unique password. There is no password recovery flow; update `EVE_ACCESS_PASSWORD` in Vercel if it needs to be replaced.
 
-## Diagnostics and logs
+## Diagnostics in logs
 
-Open **Diagnostics** from the chat header when the app is not working. The page checks the deployment, runtime, access-password configuration, and Gateway authentication mode. **Copy Report** produces a JSON support report that excludes passwords, tokens, cookies, prompts, and model responses.
+Diagnostics are log-only. The app has no diagnostics page or support-report endpoint. Nostics codes include the reason, suggested fix, and documentation URL in structured evlog fields.
 
 The app uses [evlog](https://www.evlog.dev/) across its server and browser boundaries:
 
-- one structured event for login, logout, diagnostics, and client-log requests;
+- one structured event for login, logout, runtime configuration, and client-log requests;
 - global Next.js render-error capture;
 - privacy-safe browser events for submissions and failures;
 - one turn-level event from Eve with token counts, tool names, error counts, and content lengths, but no content.
 
-Vercel captures these events in project logs. Filter by `service`, `event`, `requestId`, or a Nostics code such as `EVE_R001`. Stable diagnostic codes and fixes live in [`docs/diagnostics`](./docs/diagnostics).
+Browser failures appear in the browser console and are sent to the authenticated client-log endpoint, which resolves known diagnostic codes again instead of trusting client-supplied text. Vercel captures the backend events in project logs. Filter by `service`, `event`, `requestId`, or a Nostics code such as `EVE_R001`. Stable diagnostic codes and fixes live in [`docs/diagnostics`](./docs/diagnostics).
 
 ## Test
 

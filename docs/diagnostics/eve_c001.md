@@ -6,4 +6,4 @@ The production deployment does not have `EVE_ACCESS_PASSWORD`. Local development
 
 Open the Vercel project, go to **Settings → Environment Variables**, and add a private `EVE_ACCESS_PASSWORD`. Apply it to Production, then redeploy.
 
-Do not paste the password into a support request or diagnostic report.
+Do not paste the password into logs or a support request.
