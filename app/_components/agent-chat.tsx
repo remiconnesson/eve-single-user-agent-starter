@@ -2,7 +2,7 @@
 
 import { useEveAgent } from "eve/react";
 import { log as clientLog } from "evlog/next/client";
-import { AlertCircleIcon, ArrowRightIcon, TerminalIcon } from "lucide-react";
+import { AlertCircleIcon, ArrowRightIcon, LogOutIcon, TerminalIcon } from "lucide-react";
 import { useEffect } from "react";
 import {
   Conversation,
@@ -15,6 +15,7 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
 
@@ -111,12 +112,15 @@ export function AgentChat({ model }: { readonly model: string }) {
               </a>
             ) : null}
             <form action="/api/auth/logout" method="post">
-              <button
-                className="whitespace-nowrap text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              <Button
+                className="border-gray-400 px-2.5 text-xs text-gray-900 shadow-none hover:bg-gray-100 hover:text-foreground"
+                size="sm"
                 type="submit"
+                variant="outline"
               >
+                <LogOutIcon aria-hidden="true" className="size-3.5" />
                 Sign Out
-              </button>
+              </Button>
             </form>
           </div>
         </header>
