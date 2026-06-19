@@ -28,6 +28,12 @@ Open [http://localhost:3000](http://localhost:3000).
 
 The agent lives in `agent/`. The web chat uses `useEveAgent()` and same-origin Eve routes configured by `withEve()`.
 
+## Web search
+
+The `web_search` tool works even when the selected model's provider has no native search. It runs [Perplexity Search through AI Gateway](https://vercel.com/docs/ai-gateway/capabilities/web-search), then gives the model structured titles, URLs, snippets, and dates.
+
+Search uses the same Gateway authentication as the agent. It needs no additional API key. Search requests and the small model call that dispatches them are billed through AI Gateway.
+
 ## Access protection
 
 This starter includes application-level protection so the production domain can remain private without Vercel's Advanced Deployment Protection:
