@@ -5,6 +5,10 @@ import { defineState, type SessionAuthContext } from "eve/context";
 import type { SandboxSession } from "eve/sandbox";
 import { z } from "zod";
 import {
+  sandboxMediaTypeSchema,
+  standardBase64Schema,
+} from "../../lib/sandbox-files/contracts";
+import {
   MAX_USER_UPLOAD_FILE_BYTES,
   MAX_USER_UPLOAD_FILES,
   MAX_USER_UPLOAD_TOTAL_BYTES,
@@ -17,10 +21,6 @@ export const USER_UPLOADS_AUTH_ATTRIBUTE = "eve.userUploads";
 
 const HASH_PATTERN = /^[a-f0-9]{16}$/u;
 const SAFE_FILENAME_PATTERN = /^[A-Za-z0-9_.-]+$/u;
-const MEDIA_TYPE_PATTERN =
-  /^[a-z0-9][a-z0-9!#$&^_.+-]*\/[a-z0-9][a-z0-9!#$&^_.+-]*$/iu;
-const BASE64_PATTERN =
-  /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
 const MAX_MANIFEST_FILES = 50;
 
 const userUploadSchema = z.object({
@@ -32,7 +32,7 @@ const userUploadSchema = z.object({
     .regex(SAFE_FILENAME_PATTERN)
     .refine((value) => value !== "." && value !== ".."),
   hash: z.string().regex(HASH_PATTERN),
-  mediaType: z.string().min(1).max(127).regex(MEDIA_TYPE_PATTERN),
+  mediaType: sandboxMediaTypeSchema,
 });
 
 const userUploadManifestSchema = z.array(userUploadSchema).max(MAX_MANIFEST_FILES);
@@ -213,8 +213,7 @@ function decodeInlineFile(data: string): Uint8Array {
   if (
     (data.startsWith("data:") &&
       (commaIndex < 0 || !data.slice(0, commaIndex).toLowerCase().endsWith(";base64"))) ||
-    encoded.length % 4 !== 0 ||
-    !BASE64_PATTERN.test(encoded)
+    !standardBase64Schema.safeParse(encoded).success
   ) {
     throw new Error("Uploaded file data must be valid base64.");
   }
@@ -233,10 +232,11 @@ function sanitizeFilename(filename: string | undefined, hash: string): string {
 
 function normalizeMediaType(mediaType: string): string {
   const value = mediaType.trim() || "application/octet-stream";
-  if (!MEDIA_TYPE_PATTERN.test(value) || value.length > 127) {
+  const parsed = sandboxMediaTypeSchema.safeParse(value);
+  if (!parsed.success) {
     throw new Error("Uploaded file has an invalid media type.");
   }
-  return value;
+  return parsed.data;
 }
 
 function assertUploadBytes(upload: UserUpload, bytes: Uint8Array, path: string): void {

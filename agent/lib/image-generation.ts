@@ -2,11 +2,13 @@ import { randomUUID } from "node:crypto";
 import { gateway, generateImage } from "ai";
 import type { SandboxSession } from "eve/sandbox";
 import { z } from "zod";
-import { MAX_SANDBOX_FILE_BYTES } from "./sandbox-files";
+import {
+  MAX_SANDBOX_FILE_BYTES,
+  sandboxImageArtifactSchema,
+} from "../../lib/sandbox-files/contracts";
 
 export const IMAGE_GENERATION_MODEL = "openai/gpt-image-2";
 export const MAX_GENERATED_IMAGE_BYTES = MAX_SANDBOX_FILE_BYTES;
-const MAX_BASE64_LENGTH = Math.ceil(MAX_GENERATED_IMAGE_BYTES / 3) * 4;
 
 const imageSizeSchema = z.enum([
   "1024x1024",
@@ -27,13 +29,8 @@ export const imageGenerationInputSchema = z.object({
   size: imageSizeSchema.optional(),
 });
 
-export const imageGenerationOutputSchema = z.object({
-  byteLength: z.number().int().nonnegative().max(MAX_GENERATED_IMAGE_BYTES),
-  dataBase64: z.string().min(1).max(MAX_BASE64_LENGTH),
-  filename: z.string().min(1).max(100),
-  mediaType: z.string().min(1).max(100),
+export const imageGenerationOutputSchema = sandboxImageArtifactSchema.safeExtend({
   model: z.literal(IMAGE_GENERATION_MODEL),
-  path: z.string().min(1).max(240),
 });
 
 export type ImageGenerationInput = z.infer<typeof imageGenerationInputSchema>;

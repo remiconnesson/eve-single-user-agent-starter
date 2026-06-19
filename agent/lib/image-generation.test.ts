@@ -16,6 +16,7 @@ import {
   generateImageInSandbox,
   generateImageWithGateway,
   imageGenerationInputSchema,
+  imageGenerationOutputSchema,
   sanitizeImageFilename,
 } from "./image-generation";
 
@@ -62,6 +63,24 @@ describe("image generation", () => {
       imageGenerationInputSchema.parse({ prompt: "test", size: "512x512" }),
     ).toThrow();
     expect(() => imageGenerationInputSchema.parse({ prompt: "" })).toThrow();
+  });
+
+  it("keeps the model discriminator on current image output", () => {
+    const output = {
+      byteLength: 4,
+      dataBase64: "iVBORw==",
+      filename: "image.png",
+      mediaType: "image/png",
+      path: "/workspace/generated/image.png",
+    };
+
+    expect(imageGenerationOutputSchema.safeParse(output).success).toBe(false);
+    expect(
+      imageGenerationOutputSchema.safeParse({
+        ...output,
+        model: IMAGE_GENERATION_MODEL,
+      }).success,
+    ).toBe(true);
   });
 
   it("removes path traversal and replaces the extension from the media type", () => {

@@ -89,7 +89,13 @@ describe("sandbox tool output parsing", () => {
         mediaType: "text/plain",
         path: "/workspace/report.txt",
       }),
-    ).toMatchObject({ filename: "report.txt", path: "/workspace/report.txt" });
+    ).toEqual({
+      byteLength: 5,
+      dataBase64: bytes,
+      filename: "report.txt",
+      mediaType: "text/plain",
+      path: "/workspace/report.txt",
+    });
   });
 
   it("accepts image bytes from generate_image", () => {
@@ -100,7 +106,13 @@ describe("sandbox tool output parsing", () => {
         mediaType: "image/png",
         path: "/workspace/image.png",
       }),
-    ).toMatchObject({ mediaType: "image/png", path: "/workspace/image.png" });
+    ).toEqual({
+      byteLength: 5,
+      dataBase64: bytes,
+      filename: "image.png",
+      mediaType: "image/png",
+      path: "/workspace/image.png",
+    });
   });
 
   it("rejects malformed base64 and mismatched byte lengths", () => {
@@ -117,6 +129,18 @@ describe("sandbox tool output parsing", () => {
       parseGeneratedImageOutput({
         byteLength: 3,
         dataBase64: "not base64",
+        mediaType: "image/png",
+        path: "/workspace/image.png",
+      }),
+    ).toBeNull();
+  });
+
+  it("rejects malformed filenames in legacy image output", () => {
+    expect(
+      parseGeneratedImageOutput({
+        byteLength: 5,
+        dataBase64: bytes,
+        filename: "../image.png",
         mediaType: "image/png",
         path: "/workspace/image.png",
       }),
