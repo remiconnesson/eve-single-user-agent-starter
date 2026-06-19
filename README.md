@@ -10,7 +10,7 @@ Vercel asks for one private value during deployment:
 
 - `EVE_ACCESS_PASSWORD`: a private password used to open the deployed workspace.
 
-Vercel supplies the agent with a short-lived OIDC token for AI Gateway automatically. No AI provider key is required. When deployment finishes, open its production URL and enter the access password. The browser remains signed in for 30 days. Changing `EVE_ACCESS_PASSWORD` in the Vercel project invalidates existing sessions immediately.
+Vercel supplies the agent with a short-lived OIDC token for AI Gateway automatically. No AI provider key is required. When deployment finishes, open its production URL and enter the access password. Sign-in lasts until the browser closes, or 30 days when **Remember me** is selected. Changing `EVE_ACCESS_PASSWORD` in the Vercel project invalidates existing sessions immediately.
 
 ## Run locally
 
