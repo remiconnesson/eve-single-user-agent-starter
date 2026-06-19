@@ -22,6 +22,7 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
+import { PromptInputStop } from "@/components/ai-elements/prompt-input-stop";
 import { Button } from "@/components/ui/button";
 import type {
   ChatHistoryRecord,
@@ -59,6 +60,7 @@ export function AgentChatSession({
   onPersistChat,
   onRemoveChat,
   onSelectChat,
+  stopButtonEnabled,
 }: {
   readonly chat: ChatHistoryRecord;
   readonly chats: readonly ChatHistorySummary[];
@@ -68,6 +70,7 @@ export function AgentChatSession({
   readonly onPersistChat: (chat: ChatHistoryRecord) => Promise<void>;
   readonly onRemoveChat: (id: string) => Promise<void>;
   readonly onSelectChat: (id: string) => Promise<void>;
+  readonly stopButtonEnabled: boolean;
 }) {
   const titleRef = useRef(chat.title);
   const persistedCursorRef = useRef(`${chat.events.length}:${chat.session.streamIndex}`);
@@ -90,6 +93,7 @@ export function AgentChatSession({
     },
   });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
+  const stopStatus = isBusy ? agent.status : null;
   const isSubmitting = isBusy || isUploading;
   const isEmpty = agent.data.messages.length === 0;
   const lastUserMessageIndex = agent.data.messages.findLastIndex(
@@ -194,12 +198,19 @@ export function AgentChatSession({
           className="min-h-24 px-4 py-3 pr-14 text-[16px] leading-6 placeholder:text-gray-700 sm:text-sm"
           placeholder="Ask Eve anything…"
         />
-        <PromptInputSubmit
-          className="right-3 bottom-3 rounded-md"
-          disabled={isUploading}
-          onStop={agent.stop}
-          status={isUploading ? "submitted" : agent.status}
-        />
+        {stopButtonEnabled && stopStatus ? (
+          <PromptInputStop
+            className="right-3 bottom-3 rounded-md"
+            onStop={agent.stop}
+            status={stopStatus}
+          />
+        ) : (
+          <PromptInputSubmit
+            className="right-3 bottom-3 rounded-md"
+            disabled={isSubmitting}
+            status={isUploading ? "submitted" : agent.status}
+          />
+        )}
       </PromptInput>
       {uploadError ? (
         <p className="mt-2 text-xs text-red-900" role="alert">

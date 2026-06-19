@@ -36,8 +36,14 @@ const historyProps = {
   onSelectChat: vi.fn(async () => undefined),
 } as const;
 
-function renderChat() {
-  return renderToStaticMarkup(<AgentChatSession {...historyProps} model={MODEL} />);
+function renderChat(stopButtonEnabled = false) {
+  return renderToStaticMarkup(
+    <AgentChatSession
+      {...historyProps}
+      model={MODEL}
+      stopButtonEnabled={stopButtonEnabled}
+    />,
+  );
 }
 
 const messages = [
@@ -146,6 +152,39 @@ describe("AgentChat input requests", () => {
     expect(html).toMatch(
       /<form action="\/api\/auth\/logout"[^>]*>.*<button[^>]*data-variant="outline"[^>]*data-size="sm"[^>]*>.*Sign Out<\/button>/,
     );
+  });
+
+  it("hides the stop action while the feature flag is disabled", () => {
+    mocks.useEveAgent.mockReturnValue({
+      data: { messages },
+      error: undefined,
+      events: [],
+      send: mocks.send,
+      session: { streamIndex: 0 },
+      status: "streaming",
+      stop: mocks.stop,
+    });
+
+    const html = renderChat();
+
+    expect(html).not.toContain('aria-label="Stop"');
+    expect(html).toMatch(/<button[^>]*aria-label="Submit"[^>]*disabled=""/);
+  });
+
+  it("offers Eve's stop action while the feature flag is enabled", () => {
+    mocks.useEveAgent.mockReturnValue({
+      data: { messages },
+      error: undefined,
+      events: [],
+      send: mocks.send,
+      session: { streamIndex: 0 },
+      status: "streaming",
+      stop: mocks.stop,
+    });
+
+    const html = renderChat(true);
+
+    expect(html).toContain('aria-label="Stop"');
   });
 
   it("restores the complete saved Eve session", () => {

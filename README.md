@@ -14,6 +14,8 @@ Vercel supplies the agent with a short-lived OIDC token for AI Gateway automatic
 
 Local development and Vercel Preview deployments open without the application password. This uses Vercel's `VERCEL_ENV=preview` signal; Vercel Deployment Protection, when enabled, still applies before the app. Preview URLs are otherwise public, so do not use them for sensitive conversations or data.
 
+The stop button is behind the server-side `EVE_ENABLE_STOP_BUTTON` feature flag and is disabled by default. Set it to `1` and redeploy to expose Eve's client abort control. This aborts the current POST or event stream; it does not cancel the durable server workflow.
+
 ## Run locally
 
 Requires Node.js 24, pnpm, and the Vercel CLI. Link the project and pull a short-lived OIDC token for local AI Gateway access. No access password is required locally.

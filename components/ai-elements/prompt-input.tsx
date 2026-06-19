@@ -33,7 +33,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai";
-import { ArrowUpIcon, ImageIcon, Monitor, PlusIcon, SquareIcon, XIcon } from "lucide-react";
+import { ArrowUpIcon, ImageIcon, Monitor, PlusIcon, XIcon } from "lucide-react";
 import { nanoid } from "nanoid";
 import type {
   ChangeEvent,
@@ -1139,7 +1139,6 @@ export const PromptInputActionMenuItem = ({
 
 export type PromptInputSubmitProps = ComponentProps<typeof InputGroupButton> & {
   status?: ChatStatus;
-  onStop?: () => void;
 };
 
 export const PromptInputSubmit = ({
@@ -1147,8 +1146,6 @@ export const PromptInputSubmit = ({
   variant = "default",
   size = "icon-sm",
   status,
-  onStop,
-  onClick,
   children,
   ...props
 }: PromptInputSubmitProps) => {
@@ -1156,33 +1153,18 @@ export const PromptInputSubmit = ({
 
   let Icon = <ArrowUpIcon className="size-4" />;
 
-  if (status === "submitted") {
+  if (isGenerating) {
     Icon = <Spinner />;
-  } else if (status === "streaming") {
-    Icon = <SquareIcon className="size-4" />;
   } else if (status === "error") {
     Icon = <XIcon className="size-4" />;
   }
 
-  const handleClick = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (isGenerating && onStop) {
-        e.preventDefault();
-        onStop();
-        return;
-      }
-      onClick?.(e);
-    },
-    [isGenerating, onStop, onClick],
-  );
-
   return (
     <InputGroupButton
-      aria-label={isGenerating ? "Stop" : "Submit"}
+      aria-label="Submit"
       className={cn("absolute right-2.5 bottom-2.5 rounded-full", className)}
-      onClick={handleClick}
       size={size}
-      type={isGenerating && onStop ? "button" : "submit"}
+      type="submit"
       variant={variant}
       {...props}
     >
