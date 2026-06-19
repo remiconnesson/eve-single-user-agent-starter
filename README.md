@@ -4,23 +4,23 @@ The smallest useful eve web starter: one agent, one Next.js page, and AI Element
 
 ## Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-starter-template&env=AI_GATEWAY_API_KEY,EVE_ACCESS_PASSWORD&envDescription=Add%20your%20Vercel%20AI%20Gateway%20API%20key%20and%20a%20private%20password%20of%20at%20least%2016%20characters.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-starter-template%23deploy)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-starter-template&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password%20of%20at%20least%2016%20characters.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-starter-template%23deploy)
 
-Vercel asks for two private values during deployment:
+Vercel asks for one private value during deployment:
 
-- `AI_GATEWAY_API_KEY`: an [AI Gateway API key](https://vercel.com/docs/ai-gateway/authentication#api-key) used by the agent.
 - `EVE_ACCESS_PASSWORD`: a unique password of at least 16 characters used to open the deployed workspace.
 
-When deployment finishes, open its production URL and enter the access password. The browser remains signed in for 30 days. Changing `EVE_ACCESS_PASSWORD` in the Vercel project invalidates existing sessions immediately.
+Vercel supplies the agent with a short-lived OIDC token for AI Gateway automatically. No AI provider key is required. When deployment finishes, open its production URL and enter the access password. The browser remains signed in for 30 days. Changing `EVE_ACCESS_PASSWORD` in the Vercel project invalidates existing sessions immediately.
 
 ## Run locally
 
-Requires Node.js 24, pnpm, an `AI_GATEWAY_API_KEY`, and an `EVE_ACCESS_PASSWORD`. The starter passes the API key directly to the Gateway provider and does not fall back to Vercel OIDC.
+Requires Node.js 24, pnpm, the Vercel CLI, and an `EVE_ACCESS_PASSWORD`. Link the project and pull a short-lived OIDC token for local AI Gateway access.
 
 ```bash
 pnpm install
-cp .env.example .env.local
-# Add both values to .env.local.
+vercel link
+vercel env pull .env.local
+# Add EVE_ACCESS_PASSWORD if it is not already present.
 pnpm dev
 ```
 
