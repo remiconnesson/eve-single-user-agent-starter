@@ -1,8 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { SESSION_COOKIE_NAME } from "@/lib/auth/session";
+import { useLogger, withEvlog } from "@/lib/evlog";
 
-export function POST(request: NextRequest) {
+export const POST = withEvlog((request: NextRequest) => {
+  useLogger().set({ authentication: { outcome: "signed_out", principalId: "owner" } });
   const response = NextResponse.redirect(new URL("/login", request.url), 303);
   response.headers.set("cache-control", "no-store");
   response.cookies.set({
@@ -15,4 +17,4 @@ export function POST(request: NextRequest) {
     value: "",
   });
   return response;
-}
+});

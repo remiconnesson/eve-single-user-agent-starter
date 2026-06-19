@@ -3,6 +3,7 @@ import { KeyRoundIcon, TerminalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ACCESS_PASSWORD_MIN_LENGTH } from "@/lib/auth/session";
+import { getPublicDiagnostic } from "@/lib/diagnostics/catalog";
 
 export const metadata: Metadata = {
   title: "Sign In | Eve Starter",
@@ -14,6 +15,7 @@ export default async function LoginPage({
   readonly searchParams: Promise<{ readonly error?: string }>;
 }) {
   const { error } = await searchParams;
+  const configurationDiagnostic = getPublicDiagnostic(error);
 
   return (
     <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-[#fafafa] px-4 py-12 text-foreground">
@@ -70,6 +72,17 @@ export default async function LoginPage({
             <p className="text-sm text-red-900" id="login-error" role="alert">
               That password is not correct. Try again.
             </p>
+          ) : null}
+          {configurationDiagnostic ? (
+            <div className="rounded-md border border-red-400 bg-red-100 p-3" role="alert">
+              <p className="font-mono text-xs text-red-900">{configurationDiagnostic.code}</p>
+              <p className="mt-1 text-sm font-medium text-red-1000">
+                {configurationDiagnostic.why}
+              </p>
+              <p className="mt-1 text-sm leading-5 text-red-900">
+                {configurationDiagnostic.fix}
+              </p>
+            </div>
           ) : null}
           <Button className="w-full" type="submit">
             Continue

@@ -1,19 +1,11 @@
 import type { AuthFn } from "eve/channels/auth";
 import {
-  getAccessPassword,
-  readCookie,
-  SESSION_COOKIE_NAME,
-  verifySessionToken,
+  hasValidSessionCookie,
 } from "./session";
 
 export function singleUserPasswordAuth(): AuthFn<Request> {
   return async (request) => {
-    const password = getAccessPassword();
-    const token = readCookie({
-      cookieHeader: request.headers.get("cookie"),
-      name: SESSION_COOKIE_NAME,
-    });
-    const isAuthenticated = await verifySessionToken({ password, token });
+    const isAuthenticated = await hasValidSessionCookie(request.headers.get("cookie"));
     if (!isAuthenticated) return null;
 
     return {

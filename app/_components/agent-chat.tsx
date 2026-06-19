@@ -1,7 +1,9 @@
 "use client";
 
 import { useEveAgent } from "eve/react";
+import { log as clientLog } from "evlog/next/client";
 import { AlertCircleIcon, ArrowRightIcon, TerminalIcon } from "lucide-react";
+import { useEffect } from "react";
 import {
   Conversation,
   ConversationContent,
@@ -30,11 +32,19 @@ export function AgentChat() {
   const agent = useEveAgent();
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const isEmpty = agent.data.messages.length === 0;
+  const errorMessage = agent.error?.message;
+  const errorName = agent.error?.name;
+
+  useEffect(() => {
+    if (!errorMessage) return;
+    clientLog.error({ diagnosticCode: "EVE_R001", errorName, event: "agent.request_failed" });
+  }, [errorMessage, errorName]);
 
   const handleSubmit = async (message: PromptInputMessage) => {
     const text = message.text.trim();
     if (!text || isBusy) return;
 
+    clientLog.info({ event: "agent.message_submitted", messageLength: text.length });
     await agent.send({ message: text });
   };
 
@@ -63,7 +73,7 @@ export function AgentChat() {
         className="geist-grid pointer-events-none absolute inset-0 opacity-70"
       />
       <section className="relative mx-auto flex h-full w-full max-w-[960px] flex-col bg-background shadow-[0_0_0_1px_rgba(0,0,0,0.04)] sm:border-x">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b px-4 sm:px-6">
+        <header className="flex h-16 shrink-0 items-center justify-between border-b px-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
             <div className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground text-background">
               <TerminalIcon aria-hidden="true" className="size-4" />
@@ -76,7 +86,7 @@ export function AgentChat() {
               <span className="hidden truncate text-gray-900 sm:inline">starter</span>
             </div>
             <a
-              className="rounded-full border border-gray-400 bg-background px-2 py-0.5 text-[11px] text-gray-900 transition-colors hover:border-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="hidden rounded-full border border-gray-400 bg-background px-2 py-0.5 text-[11px] text-gray-900 transition-colors hover:border-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:inline-flex"
               href={BETA_TERMS_HREF}
               rel="noreferrer"
               target="_blank"
@@ -84,14 +94,20 @@ export function AgentChat() {
               Public Preview
             </a>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
             <span className="hidden font-mono text-xs text-gray-800 md:inline">
               claude-sonnet-4.6
             </span>
             <StatusIndicator status={agent.status} />
+            <a
+              className="whitespace-nowrap text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              href="/diagnostics"
+            >
+              Diagnostics
+            </a>
             <form action="/api/auth/logout" method="post">
               <button
-                className="text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="whitespace-nowrap text-xs text-gray-900 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 type="submit"
               >
                 Sign Out
@@ -107,7 +123,8 @@ export function AgentChat() {
               <div>
                 <p className="font-medium text-red-1000">Request Failed</p>
                 <p className="mt-0.5 text-red-900">
-                  {agent.error.message} Check your API key and try again.
+                  {agent.error.message} Diagnostic code EVE_R001. Open Diagnostics and copy the
+                  support report if retrying does not work.
                 </p>
               </div>
             </div>
@@ -138,6 +155,10 @@ export function AgentChat() {
                     disabled={isBusy}
                     key={suggestion}
                     onClick={() => {
+                      clientLog.info({
+                        event: "agent.suggestion_submitted",
+                        messageLength: suggestion.length,
+                      });
                       void agent.send({ message: suggestion });
                     }}
                     type="button"
@@ -201,12 +222,13 @@ function StatusIndicator({ status }: { readonly status: AgentStatus }) {
 
   return (
     <span
+      aria-label={label}
       aria-live="polite"
       className="flex items-center gap-2 text-xs text-gray-900"
       role="status"
     >
       <span aria-hidden="true" className={cn("size-1.5 rounded-full", tone)} />
-      <span>{label}</span>
+      <span className="hidden sm:inline">{label}</span>
     </span>
   );
 }

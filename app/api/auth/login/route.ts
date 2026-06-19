@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { Diagnostic } from "nostics";
 import {
   createSessionToken,
   getAccessPassword,
@@ -7,16 +8,29 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_MS,
 } from "@/lib/auth/session";
+import { useLogger, withEvlog } from "@/lib/evlog";
 
-export async function POST(request: NextRequest) {
+export const POST = withEvlog(async (request: NextRequest) => {
+  const requestLog = useLogger();
   const formData = await request.formData();
   const candidate = formData.get("password");
-  const password = getAccessPassword();
+  let password: string;
+  try {
+    password = getAccessPassword();
+  } catch (error) {
+    if (error instanceof Diagnostic) {
+      requestLog.set({ authentication: { diagnosticCode: error.name, outcome: "misconfigured" } });
+      return redirectToLogin({ error: error.name, request });
+    }
+    throw error;
+  }
 
   if (typeof candidate !== "string" || !matchesAccessPassword({ candidate, password })) {
+    requestLog.set({ authentication: { outcome: "denied", reason: "invalid_password" } });
     return redirectToLogin({ error: "invalid", request });
   }
 
+  requestLog.set({ authentication: { outcome: "authenticated", principalId: "owner" } });
   const response = NextResponse.redirect(new URL("/", request.url), 303);
   response.headers.set("cache-control", "no-store");
   response.cookies.set({
@@ -29,7 +43,7 @@ export async function POST(request: NextRequest) {
     value: await createSessionToken({ password }),
   });
   return response;
-}
+});
 
 function redirectToLogin({
   error,
