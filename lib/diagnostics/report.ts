@@ -44,8 +44,6 @@ export function buildDiagnosticReport(input: DiagnosticReportInput): DiagnosticR
 
   if (!password) {
     foundDiagnostics.push(toPublicDiagnostic(diagnostics.EVE_C001()));
-  } else if (password.length < 16) {
-    foundDiagnostics.push(toPublicDiagnostic(diagnostics.EVE_C002()));
   }
 
   const gatewayAuthentication = resolveGatewayAuthentication(input);
@@ -60,7 +58,7 @@ export function buildDiagnosticReport(input: DiagnosticReportInput): DiagnosticR
 
   return {
     configuration: {
-      accessPasswordConfigured: Boolean(password && password.length >= 16),
+      accessPasswordConfigured: Boolean(password),
       gatewayAuthentication,
     },
     deployment: {

@@ -8,11 +8,7 @@ export const diagnostics = defineDiagnostics({
   codes: {
     EVE_C001: {
       why: "EVE_ACCESS_PASSWORD is required.",
-      fix: "Add EVE_ACCESS_PASSWORD in Vercel with at least 16 characters, then redeploy.",
-    },
-    EVE_C002: {
-      why: "EVE_ACCESS_PASSWORD must be at least 16 characters.",
-      fix: "Replace EVE_ACCESS_PASSWORD in Vercel with a longer unique password, then redeploy.",
+      fix: "Add a private EVE_ACCESS_PASSWORD in Vercel, then redeploy.",
     },
     EVE_C003: {
       why: "Local AI Gateway credentials are missing.",
@@ -49,8 +45,6 @@ export function getPublicDiagnostic(code: string | undefined): PublicDiagnostic 
   switch (code) {
     case "EVE_C001":
       return toPublicDiagnostic(diagnostics.EVE_C001());
-    case "EVE_C002":
-      return toPublicDiagnostic(diagnostics.EVE_C002());
     case "EVE_C003":
       return toPublicDiagnostic(diagnostics.EVE_C003());
     case "EVE_C004":

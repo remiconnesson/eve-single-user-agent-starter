@@ -32,6 +32,9 @@ export function AgentChat() {
   const agent = useEveAgent();
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const isEmpty = agent.data.messages.length === 0;
+  const lastUserMessageIndex = agent.data.messages.findLastIndex(
+    (message) => message.role === "user",
+  );
   const errorMessage = agent.error?.message;
   const errorName = agent.error?.name;
 
@@ -176,12 +179,10 @@ export function AgentChat() {
         ) : (
           <Conversation className="min-h-0 flex-1">
             <ConversationContent className="mx-auto w-full max-w-3xl gap-8 px-4 py-8 sm:px-6 sm:py-10">
-              {agent.data.messages.map((message, index) => (
+              {agent.data.messages.map((message, index, messages) => (
                 <AgentMessage
-                  canRespond={!isBusy}
-                  isStreaming={
-                    agent.status === "streaming" && index === agent.data.messages.length - 1
-                  }
+                  canRespond={!isBusy && index > lastUserMessageIndex}
+                  isStreaming={agent.status === "streaming" && index === messages.length - 1}
                   key={message.id}
                   message={message}
                   onInputResponses={(inputResponses) => agent.send({ inputResponses })}
