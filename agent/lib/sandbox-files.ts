@@ -1,4 +1,5 @@
 import { posix } from "node:path";
+import { Readable } from "node:stream";
 import type { SandboxSession } from "eve/sandbox";
 import { z } from "zod";
 
@@ -96,6 +97,20 @@ export const downloadSandboxFileOutputSchema = z.object({
 
 export type SandboxFileDownload = z.output<typeof downloadSandboxFileOutputSchema>;
 
+type SandboxFileReader = {
+  readonly readFile: (
+    options: Parameters<SandboxSession["readFile"]>[0],
+  ) => PromiseLike<unknown>;
+};
+
+type SandboxFileStream = {
+  readonly getReader: () => {
+    readonly cancel: (reason?: unknown) => Promise<void>;
+    readonly read: () => Promise<{ readonly done: boolean; readonly value?: unknown }>;
+    readonly releaseLock: () => void;
+  };
+};
+
 export function normalizeSandboxFilePath(input: string): SandboxFilePath {
   const result = sandboxFilePathSchema.safeParse(input);
   if (result.success) return result.data;
@@ -124,24 +139,25 @@ export async function downloadSandboxFile({
   sandbox,
 }: {
   readonly path: SandboxFilePath;
-  readonly sandbox: Pick<SandboxSession, "readBinaryFile">;
+  readonly sandbox: SandboxFileReader;
 }): Promise<SandboxFileDownload> {
-  let content: Uint8Array | null;
+  let stream: SandboxFileStream | null;
   try {
-    content = await sandbox.readBinaryFile({ path });
+    stream = normalizeSandboxFileStream(await sandbox.readFile({ path }));
   } catch {
     throw new SandboxFileError({ code: "unreadable", path });
   }
 
-  if (content === null) {
+  if (stream === null) {
     throw new SandboxFileError({ code: "not-found", path });
   }
-  if (content.byteLength > MAX_SANDBOX_FILE_BYTES) {
-    throw new SandboxFileError({
-      byteLength: content.byteLength,
-      code: "too-large",
-      limit: MAX_SANDBOX_FILE_BYTES,
-    });
+
+  let content: Uint8Array;
+  try {
+    content = await readSandboxFileStream(stream);
+  } catch (error) {
+    if (error instanceof SandboxFileError) throw error;
+    throw new SandboxFileError({ code: "unreadable", path });
   }
 
   const metadata = getSandboxFileMetadata(path);
@@ -152,6 +168,55 @@ export async function downloadSandboxFile({
     mediaType: metadata.mediaType,
     path,
   });
+}
+
+function normalizeSandboxFileStream(
+  stream: unknown,
+): SandboxFileStream | null {
+  if (stream === null) return null;
+  if (stream instanceof ReadableStream) return stream;
+  if (stream instanceof Readable) return Readable.toWeb(stream);
+
+  throw new TypeError("Sandbox returned an unsupported file stream.");
+}
+
+async function readSandboxFileStream(
+  stream: SandboxFileStream,
+): Promise<Uint8Array> {
+  const reader = stream.getReader();
+  const chunks: Uint8Array[] = [];
+  let byteLength = 0;
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!(value instanceof Uint8Array)) {
+        throw new TypeError("Sandbox file stream returned a non-byte chunk.");
+      }
+
+      byteLength += value.byteLength;
+      if (byteLength > MAX_SANDBOX_FILE_BYTES) {
+        await reader.cancel().catch(() => undefined);
+        throw new SandboxFileError({
+          byteLength,
+          code: "too-large",
+          limit: MAX_SANDBOX_FILE_BYTES,
+        });
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const content = new Uint8Array(byteLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    content.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return content;
 }
 
 function relativePathProblem(value: string): string | null {
