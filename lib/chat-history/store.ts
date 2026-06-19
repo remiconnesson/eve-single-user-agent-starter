@@ -14,6 +14,17 @@ export interface ChatHistoryRecord extends ChatHistorySummary {
   readonly session: SessionState;
 }
 
+export function toChatHistorySummary(
+  chat: ChatHistoryRecord,
+): ChatHistorySummary {
+  return {
+    createdAt: chat.createdAt,
+    id: chat.id,
+    title: chat.title,
+    updatedAt: chat.updatedAt,
+  };
+}
+
 /**
  * Persistence boundary for chat history. Browser storage and a future Neon
  * implementation share this contract, so the chat UI does not depend on either.

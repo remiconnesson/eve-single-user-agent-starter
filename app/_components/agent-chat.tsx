@@ -81,16 +81,6 @@ export function AgentChatSession({
   const agent = useEveAgent({
     initialEvents: chat.events,
     initialSession: chat.session,
-    onFinish(snapshot) {
-      persistedCursorRef.current = `${snapshot.events.length}:${snapshot.session.streamIndex}`;
-      void onPersistChat({
-        ...chat,
-        events: snapshot.events,
-        session: snapshot.session,
-        title: titleRef.current,
-        updatedAt: new Date().toISOString(),
-      });
-    },
   });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const stopStatus = isBusy ? agent.status : null;
@@ -116,7 +106,8 @@ export function AgentChatSession({
     if (agent.events.length === 0) return;
     const cursor = `${agent.events.length}:${agent.session.streamIndex}`;
     if (persistedCursorRef.current === cursor) return;
-    const timeout = window.setTimeout(() => {
+
+    const persistSnapshot = () => {
       if (persistedCursorRef.current === cursor) return;
       persistedCursorRef.current = cursor;
       void onPersistChat({
@@ -127,9 +118,23 @@ export function AgentChatSession({
         title: titleRef.current,
         updatedAt: new Date().toISOString(),
       });
-    }, 300);
+    };
+
+    if (agent.status !== "submitted" && agent.status !== "streaming") {
+      persistSnapshot();
+      return;
+    }
+
+    const timeout = window.setTimeout(persistSnapshot, 300);
     return () => window.clearTimeout(timeout);
-  }, [agent.events, agent.session, chat.createdAt, chat.id, onPersistChat]);
+  }, [
+    agent.events,
+    agent.session,
+    agent.status,
+    chat.createdAt,
+    chat.id,
+    onPersistChat,
+  ]);
 
   const sendMessage = async (text: string) => {
     const normalizedText = text.trim();

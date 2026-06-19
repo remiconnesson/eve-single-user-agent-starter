@@ -1,9 +1,9 @@
 import type { HandleMessageStreamEvent } from "eve/client";
 import { z } from "zod";
-import type {
-  ChatHistoryRecord,
-  ChatHistoryStore,
-  ChatHistorySummary,
+import {
+  type ChatHistoryRecord,
+  type ChatHistoryStore,
+  toChatHistorySummary,
 } from "./store";
 
 const DEFAULT_STORAGE_KEY = "eve.chat-history.v1";
@@ -111,7 +111,7 @@ export function createLocalStorageChatHistoryStore({
     },
     async list() {
       return read()
-        .map(toSummary)
+        .map(toChatHistorySummary)
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
     },
     async remove(id) {
@@ -126,15 +126,6 @@ export function createLocalStorageChatHistoryStore({
         : compactChat;
       write([...chats.filter((candidate) => candidate.id !== chat.id), nextChat]);
     },
-  };
-}
-
-function toSummary(chat: ChatHistoryRecord): ChatHistorySummary {
-  return {
-    createdAt: chat.createdAt,
-    id: chat.id,
-    title: chat.title,
-    updatedAt: chat.updatedAt,
   };
 }
 
