@@ -2,8 +2,15 @@
 
 import { useEveAgent } from "eve/react";
 import { log as clientLog } from "evlog/next/client";
-import { AlertCircleIcon, ArrowRightIcon, LogOutIcon, TerminalIcon } from "lucide-react";
-import { useEffect } from "react";
+import {
+  AlertCircleIcon,
+  ArrowRightIcon,
+  HistoryIcon,
+  LogOutIcon,
+  TerminalIcon,
+  XIcon,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import {
   Conversation,
   ConversationContent,
@@ -16,8 +23,14 @@ import {
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 import { Button } from "@/components/ui/button";
+import type {
+  ChatHistoryRecord,
+  ChatHistorySummary,
+} from "@/lib/chat-history/store";
+import { UNTITLED_CHAT_TITLE } from "@/lib/chat-history/store";
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
+import { ChatHistoryPanel } from "./chat-history-panel";
 
 const BETA_TERMS_HREF = "https://vercel.com/docs/release-phases/public-beta-agreement";
 const SUGGESTIONS = [
@@ -29,8 +42,42 @@ const SUGGESTIONS = [
 
 type AgentStatus = ReturnType<typeof useEveAgent>["status"];
 
-export function AgentChat({ model }: { readonly model: string }) {
-  const agent = useEveAgent();
+export function AgentChatSession({
+  chat,
+  chats,
+  historyAvailable,
+  model,
+  onCreateChat,
+  onPersistChat,
+  onRemoveChat,
+  onSelectChat,
+}: {
+  readonly chat: ChatHistoryRecord;
+  readonly chats: readonly ChatHistorySummary[];
+  readonly historyAvailable: boolean;
+  readonly model: string;
+  readonly onCreateChat: () => Promise<void>;
+  readonly onPersistChat: (chat: ChatHistoryRecord) => Promise<void>;
+  readonly onRemoveChat: (id: string) => Promise<void>;
+  readonly onSelectChat: (id: string) => Promise<void>;
+}) {
+  const titleRef = useRef(chat.title);
+  const persistedCursorRef = useRef(`${chat.events.length}:${chat.session.streamIndex}`);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const agent = useEveAgent({
+    initialEvents: chat.events,
+    initialSession: chat.session,
+    onFinish(snapshot) {
+      persistedCursorRef.current = `${snapshot.events.length}:${snapshot.session.streamIndex}`;
+      void onPersistChat({
+        ...chat,
+        events: snapshot.events,
+        session: snapshot.session,
+        title: titleRef.current,
+        updatedAt: new Date().toISOString(),
+      });
+    },
+  });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const isEmpty = agent.data.messages.length === 0;
   const lastUserMessageIndex = agent.data.messages.findLastIndex(
@@ -44,12 +91,38 @@ export function AgentChat({ model }: { readonly model: string }) {
     clientLog.error({ diagnosticCode: "EVE_R001", errorName, event: "agent.request_failed" });
   }, [errorMessage, errorName]);
 
+  useEffect(() => {
+    if (agent.events.length === 0) return;
+    const cursor = `${agent.events.length}:${agent.session.streamIndex}`;
+    if (persistedCursorRef.current === cursor) return;
+    const timeout = window.setTimeout(() => {
+      if (persistedCursorRef.current === cursor) return;
+      persistedCursorRef.current = cursor;
+      void onPersistChat({
+        createdAt: chat.createdAt,
+        events: agent.events,
+        id: chat.id,
+        session: agent.session,
+        title: titleRef.current,
+        updatedAt: new Date().toISOString(),
+      });
+    }, 300);
+    return () => window.clearTimeout(timeout);
+  }, [agent.events, agent.session, chat.createdAt, chat.id, onPersistChat]);
+
+  const sendMessage = async (text: string) => {
+    if (chat.title === UNTITLED_CHAT_TITLE) {
+      titleRef.current = createChatTitle(text);
+    }
+    await agent.send({ message: text });
+  };
+
   const handleSubmit = async (message: PromptInputMessage) => {
     const text = message.text.trim();
     if (!text || isBusy) return;
 
     clientLog.info({ event: "agent.message_submitted", messageLength: text.length });
-    await agent.send({ message: text });
+    await sendMessage(text);
   };
 
   const composer = (
@@ -76,9 +149,76 @@ export function AgentChat({ model }: { readonly model: string }) {
         aria-hidden="true"
         className="geist-grid pointer-events-none absolute inset-0 opacity-70"
       />
-      <section className="relative mx-auto flex h-full w-full max-w-[960px] flex-col bg-background shadow-[0_0_0_1px_rgba(0,0,0,0.04)] sm:border-x">
-        <header className="flex h-16 shrink-0 items-center justify-between border-b px-3 sm:px-6">
+      <div className="relative mx-auto flex h-full w-full max-w-[1200px] bg-background shadow-[0_0_0_1px_rgba(0,0,0,0.04)] sm:border-x">
+        <aside className="hidden w-60 shrink-0 border-r bg-[#fafafa] md:flex">
+          <ChatHistoryPanel
+            activeId={chat.id}
+            chats={chats}
+            disabled={isBusy}
+            historyAvailable={historyAvailable}
+            onCreateChat={() => void onCreateChat()}
+            onRemoveChat={(id) => void onRemoveChat(id)}
+            onSelectChat={(id) => void onSelectChat(id)}
+          />
+        </aside>
+
+        {historyOpen ? (
+          <div className="fixed inset-0 z-30 md:hidden">
+            <button
+              aria-label="Close chat history"
+              className="absolute inset-0 bg-black/20"
+              onClick={() => setHistoryOpen(false)}
+              type="button"
+            />
+            <aside
+              aria-label="Chat history"
+              aria-modal="true"
+              className="relative flex h-full w-[min(20rem,85vw)] border-r bg-[#fafafa] shadow-lg"
+              role="dialog"
+            >
+              <ChatHistoryPanel
+                activeId={chat.id}
+                chats={chats}
+                closeButton={
+                  <Button
+                    aria-label="Close chat history"
+                    onClick={() => setHistoryOpen(false)}
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <XIcon aria-hidden="true" />
+                  </Button>
+                }
+                disabled={isBusy}
+                historyAvailable={historyAvailable}
+                onCreateChat={() => {
+                  setHistoryOpen(false);
+                  void onCreateChat();
+                }}
+                onRemoveChat={(id) => void onRemoveChat(id)}
+                onSelectChat={(id) => {
+                  setHistoryOpen(false);
+                  void onSelectChat(id);
+                }}
+              />
+            </aside>
+          </div>
+        ) : null}
+
+        <section className="flex min-w-0 flex-1 flex-col bg-background">
+          <header className="flex h-16 shrink-0 items-center justify-between border-b px-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-3">
+            <Button
+              aria-label="Open chat history"
+              className="md:hidden"
+              onClick={() => setHistoryOpen(true)}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <HistoryIcon aria-hidden="true" />
+            </Button>
             <div className="grid size-8 shrink-0 place-items-center rounded-md bg-foreground text-background">
               <TerminalIcon aria-hidden="true" className="size-4" />
             </div>
@@ -123,7 +263,7 @@ export function AgentChat({ model }: { readonly model: string }) {
               </Button>
             </form>
           </div>
-        </header>
+          </header>
 
         {agent.error ? (
           <div className="shrink-0 border-b border-red-400 bg-red-100 px-4 py-3 sm:px-6">
@@ -168,7 +308,7 @@ export function AgentChat({ model }: { readonly model: string }) {
                         event: "agent.suggestion_submitted",
                         messageLength: suggestion.length,
                       });
-                      void agent.send({ message: suggestion });
+                      void sendMessage(suggestion);
                     }}
                     type="button"
                   >
@@ -209,9 +349,15 @@ export function AgentChat({ model }: { readonly model: string }) {
             </div>
           </div>
         )}
-      </section>
+        </section>
+      </div>
     </main>
   );
+}
+
+function createChatTitle(message: string): string {
+  const normalized = message.replace(/\s+/gu, " ").trim();
+  return normalized.length > 48 ? `${normalized.slice(0, 47)}…` : normalized;
 }
 
 function StatusIndicator({ status }: { readonly status: AgentStatus }) {

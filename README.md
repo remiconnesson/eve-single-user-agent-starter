@@ -34,6 +34,14 @@ The `web_search` tool works even when the selected model's provider has no nativ
 
 Search uses the same Gateway authentication as the agent. It needs no additional API key. Search requests and the small model call that dispatches them are billed through AI Gateway.
 
+## Chat history
+
+Chat history is saved in the current browser. Each record keeps Eve's complete resumable cursor and the completed stream events needed to restore messages, reasoning, tools, and approvals after a reload. Streaming deltas are removed before storage to avoid saving repeated partial text.
+
+The UI depends on the `ChatHistoryStore` interface in [`lib/chat-history/store.ts`](./lib/chat-history/store.ts). The default implementation is [`local-storage.ts`](./lib/chat-history/local-storage.ts). A Neon adapter can implement the same asynchronous `list`, `get`, `upsert`, and `remove` methods without changing the chat UI.
+
+Browser history does not sync across devices or browsers. Deleting a chat removes its browser record; it does not delete the underlying Vercel Workflow run.
+
 ## Access protection
 
 This starter includes application-level protection so the production domain can remain private without Vercel's Advanced Deployment Protection:
