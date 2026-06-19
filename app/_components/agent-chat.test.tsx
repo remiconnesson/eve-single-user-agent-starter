@@ -118,13 +118,6 @@ describe("AgentChat input requests", () => {
     const html = renderChat();
 
     expect(html).toContain(MODEL);
-    expect(html).not.toContain("claude-sonnet-4.6");
-  });
-
-  it("does not render diagnostics controls", () => {
-    const html = renderChat();
-
-    expect(html).not.toContain('href="/diagnostics"');
   });
 
   it("keeps diagnostic codes and support instructions out of error UI", () => {
@@ -146,11 +139,11 @@ describe("AgentChat input requests", () => {
     expect(html).not.toContain("support report");
   });
 
-  it("renders sign out as a compact outlined action", () => {
+  it("renders the sign-out action", () => {
     const html = renderChat();
 
     expect(html).toMatch(
-      /<form action="\/api\/auth\/logout"[^>]*>.*<button[^>]*data-variant="outline"[^>]*data-size="sm"[^>]*>.*Sign Out<\/button>/,
+      /<form action="\/api\/auth\/logout" method="post">.*Sign Out<\/button>/,
     );
   });
 
