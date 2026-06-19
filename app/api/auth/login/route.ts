@@ -14,6 +14,7 @@ export const POST = withEvlog(async (request: NextRequest) => {
   const requestLog = useLogger();
   const formData = await request.formData();
   const candidate = formData.get("password");
+  const rememberMe = formData.get("rememberMe") === "on";
   let password: string;
   try {
     password = getAccessPassword();
@@ -30,12 +31,18 @@ export const POST = withEvlog(async (request: NextRequest) => {
     return redirectToLogin({ error: "invalid", request });
   }
 
-  requestLog.set({ authentication: { outcome: "authenticated", principalId: "owner" } });
+  requestLog.set({
+    authentication: {
+      outcome: "authenticated",
+      persistence: rememberMe ? "30_days" : "browser_session",
+      principalId: "owner",
+    },
+  });
   const response = NextResponse.redirect(new URL("/", request.url), 303);
   response.headers.set("cache-control", "no-store");
   response.cookies.set({
     httpOnly: true,
-    maxAge: SESSION_TTL_MS / 1000,
+    ...(rememberMe ? { maxAge: SESSION_TTL_MS / 1000 } : {}),
     name: SESSION_COOKIE_NAME,
     path: "/",
     sameSite: "lax",

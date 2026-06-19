@@ -82,6 +82,17 @@ export default async function LoginPage({
               </p>
             </div>
           ) : null}
+          <div className="flex items-center gap-2 py-1">
+            <input
+              className="size-4 rounded border-gray-500 accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              id="remember-me"
+              name="rememberMe"
+              type="checkbox"
+            />
+            <label className="text-sm text-gray-900" htmlFor="remember-me">
+              Remember me for 30 days
+            </label>
+          </div>
           <Button className="w-full" type="submit">
             Continue
           </Button>
