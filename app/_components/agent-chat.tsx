@@ -83,7 +83,7 @@ export function AgentChat() {
               <span aria-hidden="true" className="text-gray-600">
                 /
               </span>
-              <span className="hidden truncate text-gray-900 sm:inline">starter</span>
+              <span className="hidden truncate text-gray-900 sm:inline">single user</span>
             </div>
             <a
               className="hidden rounded-full border border-gray-400 bg-background px-2 py-0.5 text-[11px] text-gray-900 transition-colors hover:border-gray-500 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:inline-flex"

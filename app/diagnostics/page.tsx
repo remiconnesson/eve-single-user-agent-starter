@@ -6,7 +6,7 @@ import { requireAuthenticatedPage } from "@/lib/auth/page";
 import { readDiagnosticReport } from "@/lib/diagnostics/report";
 
 export const metadata: Metadata = {
-  title: "Diagnostics | Eve Starter",
+  title: "Diagnostics | Eve Single-User Agent Starter",
 };
 
 const GATEWAY_LABELS = {

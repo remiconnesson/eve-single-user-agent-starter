@@ -1,5 +1,5 @@
 {
-  "name": "eve-starter-template",
+  "name": "eve-single-user-agent-starter",
   "version": "0.0.0",
   "type": "module",
   "imports": {
