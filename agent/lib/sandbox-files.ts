@@ -1,19 +1,20 @@
 import { posix } from "node:path";
 import { Readable } from "node:stream";
 import type { SandboxSession } from "eve/sandbox";
+import { z } from "zod";
 import {
   MAX_SANDBOX_FILE_BYTES,
   type SandboxFileArtifact,
-  type SandboxFilePath,
   sandboxFileArtifactSchema,
-  sandboxFilePathSchema,
 } from "../../lib/sandbox-files/contracts";
 
-export {
-  MAX_SANDBOX_FILE_BYTES,
-  type SandboxFilePath,
-  sandboxFilePathSchema,
-};
+export { MAX_SANDBOX_FILE_BYTES };
+
+const MAX_SANDBOX_PATH_LENGTH = 1024;
+const WORKSPACE_ROOT = "/workspace";
+const WORKSPACE_PREFIX = `${WORKSPACE_ROOT}/`;
+const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
+const WINDOWS_DRIVE_PREFIX = /^[A-Za-z]:/;
 
 const MEDIA_TYPES_BY_EXTENSION: Readonly<Record<string, string>> = {
   ".css": "text/css",
@@ -72,6 +73,22 @@ export class SandboxFileError extends Error {
     return this.details.code === "too-large" ? this.details.limit : undefined;
   }
 }
+
+const sandboxFileInputPathSchema = z.string().superRefine((value, context) => {
+  const problem = relativePathProblem(value);
+  if (problem === null) return;
+
+  context.addIssue({
+    code: "custom",
+    message: problem,
+  });
+});
+
+export const sandboxFilePathSchema = sandboxFileInputPathSchema
+  .transform(toAbsoluteWorkspacePath)
+  .brand<"SandboxFilePath">();
+
+export type SandboxFilePath = z.output<typeof sandboxFilePathSchema>;
 
 export const downloadSandboxFileOutputSchema = sandboxFileArtifactSchema;
 
@@ -197,6 +214,33 @@ async function readSandboxFileStream(
     offset += chunk.byteLength;
   }
   return content;
+}
+
+function relativePathProblem(value: string): string | null {
+  if (value.length === 0) return "Enter a file path.";
+  if (value.trim() !== value) return "File paths cannot start or end with whitespace.";
+  if (value.length > MAX_SANDBOX_PATH_LENGTH) return "The file path is too long.";
+  if (WINDOWS_DRIVE_PREFIX.test(value)) {
+    return "Use a path inside /workspace.";
+  }
+  if (value.includes("\\")) return "Use forward slashes in file paths.";
+  if (CONTROL_CHARACTERS.test(value)) return "File paths cannot contain control characters.";
+
+  const relativePath = value.startsWith(WORKSPACE_PREFIX)
+    ? value.slice(WORKSPACE_PREFIX.length)
+    : value;
+  if (relativePath.startsWith("/")) return "Use a path inside /workspace.";
+
+  const segments = relativePath.split("/");
+  if (segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
+    return "The file path must identify a file inside /workspace.";
+  }
+
+  return null;
+}
+
+function toAbsoluteWorkspacePath(path: string): string {
+  return path.startsWith(WORKSPACE_PREFIX) ? path : `${WORKSPACE_PREFIX}${path}`;
 }
 
 function errorMessage(details: SandboxFileErrorDetails): string {

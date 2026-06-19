@@ -6,7 +6,6 @@ import {
 } from "@/lib/user-uploads/constants";
 import {
   type SandboxFileArtifact,
-  legacySandboxImageArtifactSchema,
   sandboxFileArtifactSchema,
   sandboxFilenameSchema,
   sandboxImageArtifactSchema,
@@ -84,11 +83,10 @@ export function parseDownloadFileOutput(output: unknown): SandboxFileArtifact | 
 }
 
 export function parseGeneratedImageOutput(output: unknown): SandboxFileArtifact | null {
-  const current = sandboxImageArtifactSchema.safeParse(output);
-  if (current.success) return current.data;
-
-  const legacy = legacySandboxImageArtifactSchema.safeParse(output);
-  return legacy.success ? legacy.data : null;
+  const parsed = sandboxImageArtifactSchema.safeParse(
+    withGeneratedImageFilename(output),
+  );
+  return parsed.success ? parsed.data : null;
 }
 
 export function sandboxFileDataUrl(artifact: SandboxFileArtifact): string {
@@ -100,6 +98,27 @@ function sanitizeUploadFilename(value: string): string {
   const safe = basename.replace(/[^\w.-]+/gu, "_");
   const parsed = sandboxFilenameSchema.safeParse(safe);
   return parsed.success ? parsed.data : "upload";
+}
+
+function withGeneratedImageFilename(output: unknown): unknown {
+  if (
+    !isRecord(output) ||
+    typeof output.path !== "string" ||
+    output.filename !== undefined
+  ) {
+    return output;
+  }
+
+  return { ...output, filename: filenameFromPath(output.path) };
+}
+
+function filenameFromPath(path: string): string {
+  const parsed = sandboxFilenameSchema.safeParse(path.split("/").at(-1));
+  return parsed.success ? parsed.data : "generated-image";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function bytesToBase64(bytes: Uint8Array): string {
