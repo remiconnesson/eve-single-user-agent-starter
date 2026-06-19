@@ -198,6 +198,14 @@ describe("AgentChat input requests", () => {
     );
   });
 
+  it("uses one effect-owned persistence path", () => {
+    renderChat();
+
+    expect(mocks.useEveAgent.mock.calls.at(-1)?.[0]).not.toHaveProperty(
+      "onFinish",
+    );
+  });
+
   it("renders browser history and a new-chat action", () => {
     const html = renderChat();
 

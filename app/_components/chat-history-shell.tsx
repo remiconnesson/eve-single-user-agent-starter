@@ -1,12 +1,14 @@
 "use client";
 
 import { log as clientLog } from "evlog/next/client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createLocalStorageChatHistoryStore } from "@/lib/chat-history/local-storage";
+import { createChatPersistenceQueue } from "@/lib/chat-history/persistence-queue";
 import {
   type ChatHistoryRecord,
   type ChatHistoryStore,
   type ChatHistorySummary,
+  toChatHistorySummary,
   UNTITLED_CHAT_TITLE,
 } from "@/lib/chat-history/store";
 import { AgentChatSession } from "./agent-chat";
@@ -47,6 +49,15 @@ export function AgentChat({
     );
   }, []);
 
+  const persistenceQueue = useMemo(
+    () =>
+      createChatPersistenceQueue({
+        onError: markPersistenceUnavailable,
+        persist: (chat) => historyStore.upsert(chat),
+      }),
+    [historyStore, markPersistenceUnavailable],
+  );
+
   useEffect(() => {
     let cancelled = false;
 
@@ -59,7 +70,7 @@ export function AgentChat({
         if (!cancelled) {
           setHistory({
             activeChat,
-            chats: savedChat ? chats : [toHistorySummary(activeChat)],
+            chats: savedChat ? chats : [toChatHistorySummary(activeChat)],
             kind: "ready",
             persistence: "available",
           });
@@ -73,7 +84,7 @@ export function AgentChat({
           const activeChat = createEmptyChat();
           setHistory({
             activeChat,
-            chats: [toHistorySummary(activeChat)],
+            chats: [toChatHistorySummary(activeChat)],
             kind: "ready",
             persistence: "unavailable",
           });
@@ -93,17 +104,17 @@ export function AgentChat({
           ? {
               ...current,
               activeChat: chat,
-              chats: upsertHistorySummary(current.chats, toHistorySummary(chat)),
+              chats: upsertHistorySummary(
+                current.chats,
+                toChatHistorySummary(chat),
+              ),
             }
           : current,
       );
-      try {
-        await historyStore.upsert(chat);
-      } catch (error) {
-        markPersistenceUnavailable(error);
-      }
+      persistenceQueue.enqueue(chat);
+      await persistenceQueue.flush();
     },
-    [historyStore, markPersistenceUnavailable],
+    [persistenceQueue],
   );
 
   const selectChat = useCallback(
@@ -133,6 +144,7 @@ export function AgentChat({
       if (!window.confirm("Delete this chat from this browser?")) return;
 
       try {
+        await persistenceQueue.flush();
         await historyStore.remove(id);
         const remaining = history.chats.filter((chat) => chat.id !== id);
         if (history.activeChat.id !== id) {
@@ -146,13 +158,13 @@ export function AgentChat({
         setHistory({
           ...history,
           activeChat,
-          chats: nextChat ? remaining : [toHistorySummary(activeChat)],
+          chats: nextChat ? remaining : [toChatHistorySummary(activeChat)],
         });
       } catch (error) {
         markPersistenceUnavailable(error);
       }
     },
-    [history, historyStore, markPersistenceUnavailable],
+    [history, historyStore, markPersistenceUnavailable, persistenceQueue],
   );
 
   if (history.kind === "loading") return <ChatHistoryLoading />;
@@ -182,15 +194,6 @@ function createEmptyChat(): ChatHistoryRecord {
     session: { streamIndex: 0 },
     title: UNTITLED_CHAT_TITLE,
     updatedAt: now,
-  };
-}
-
-function toHistorySummary(chat: ChatHistoryRecord): ChatHistorySummary {
-  return {
-    createdAt: chat.createdAt,
-    id: chat.id,
-    title: chat.title,
-    updatedAt: chat.updatedAt,
   };
 }
 
