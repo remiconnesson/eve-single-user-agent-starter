@@ -4,10 +4,11 @@ The smallest useful eve web starter: one agent, one Next.js page, and AI Element
 
 ## Run it
 
-Requires Node.js 24 and a model credential for the default `anthropic/claude-sonnet-4.6` model.
+Requires Node.js 24 and an `AI_GATEWAY_API_KEY`. The starter passes this key directly to the Gateway provider and does not fall back to Vercel OIDC.
 
 ```bash
 pnpm install
+cp .env.example .env.local
 pnpm dev
 ```
 
