@@ -1,0 +1,98 @@
+import { describe, expect, it } from "vitest";
+import {
+  MAX_SANDBOX_FILE_BYTES,
+  SandboxFileError,
+  downloadSandboxFile,
+  normalizeSandboxFilePath,
+  sandboxFilePathSchema,
+} from "./sandbox-files";
+
+describe("normalizeSandboxFilePath", () => {
+  it("anchors a relative path under /workspace", () => {
+    expect(normalizeSandboxFilePath("reports/output.csv")).toBe(
+      "/workspace/reports/output.csv",
+    );
+  });
+
+  it("accepts an absolute path already rooted at /workspace", () => {
+    expect(normalizeSandboxFilePath("/workspace/generated/image.png")).toBe(
+      "/workspace/generated/image.png",
+    );
+  });
+
+  it.each([
+    "",
+    " ",
+    "/etc/passwd",
+    "/workspace",
+    "/workspace/../etc/passwd",
+    "/workspace/generated//image.png",
+    "/workspace/generated/./image.png",
+    "../secret.txt",
+    "reports/../../secret.txt",
+    "reports/./output.csv",
+    "reports//output.csv",
+    "reports/",
+    "reports\\output.csv",
+    "reports/\0output.csv",
+  ])("rejects unsafe or directory-like path %j", (path) => {
+    expect(() => normalizeSandboxFilePath(path)).toThrow(SandboxFileError);
+    expect(sandboxFilePathSchema.safeParse(path).success).toBe(false);
+  });
+});
+
+describe("downloadSandboxFile", () => {
+  it("returns a browser-safe file contract", async () => {
+    const content = Buffer.from("hello");
+    const result = await downloadSandboxFile({
+      path: normalizeSandboxFilePath("reports/hello.txt"),
+      sandbox: {
+        readBinaryFile: async () => content,
+      },
+    });
+
+    expect(result).toEqual({
+      byteLength: 5,
+      dataBase64: content.toString("base64"),
+      filename: "hello.txt",
+      mediaType: "text/plain",
+      path: "/workspace/reports/hello.txt",
+    });
+  });
+
+  it("uses a binary media type for unknown extensions", async () => {
+    const result = await downloadSandboxFile({
+      path: normalizeSandboxFilePath("archive.unknown"),
+      sandbox: {
+        readBinaryFile: async () => Buffer.from([0, 1, 2]),
+      },
+    });
+
+    expect(result.mediaType).toBe("application/octet-stream");
+  });
+
+  it("rejects missing files", async () => {
+    const promise = downloadSandboxFile({
+      path: normalizeSandboxFilePath("missing.txt"),
+      sandbox: {
+        readBinaryFile: async () => null,
+      },
+    });
+
+    await expect(promise).rejects.toMatchObject({ code: "not-found" });
+  });
+
+  it("rejects files over the download limit", async () => {
+    const promise = downloadSandboxFile({
+      path: normalizeSandboxFilePath("large.bin"),
+      sandbox: {
+        readBinaryFile: async () => new Uint8Array(MAX_SANDBOX_FILE_BYTES + 1),
+      },
+    });
+
+    await expect(promise).rejects.toMatchObject({
+      code: "too-large",
+      limit: MAX_SANDBOX_FILE_BYTES,
+    });
+  });
+});

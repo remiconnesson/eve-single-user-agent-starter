@@ -150,9 +150,34 @@ function parseEvents(values: readonly unknown[]): HandleMessageStreamEvent[] | n
 function compactEvents(
   events: readonly HandleMessageStreamEvent[],
 ): readonly HandleMessageStreamEvent[] {
-  return events.filter(
-    (event) => event.type !== "message.appended" && event.type !== "reasoning.appended",
-  );
+  return events
+    .filter(
+      (event) => event.type !== "message.appended" && event.type !== "reasoning.appended",
+    )
+    .map(compactEvent);
+}
+
+function compactEvent(event: HandleMessageStreamEvent): HandleMessageStreamEvent {
+  if (event.type !== "action.result" || event.data.result.kind !== "tool-result") {
+    return event;
+  }
+
+  const output = event.data.result.output;
+  if (!isRecord(output) || typeof output.dataBase64 !== "string") {
+    return event;
+  }
+
+  const { dataBase64: _dataBase64, ...compactOutput } = output;
+  return {
+    ...event,
+    data: {
+      ...event.data,
+      result: {
+        ...event.data.result,
+        output: { ...compactOutput, dataBase64Omitted: true },
+      },
+    },
+  };
 }
 
 function isStreamEvent(value: unknown): value is HandleMessageStreamEvent {

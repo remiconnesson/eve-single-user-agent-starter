@@ -163,4 +163,11 @@ describe("AgentChat input requests", () => {
     expect(html).toContain("New Chat");
     expect(html).toContain("Saved in this browser");
   });
+
+  it("offers a sandbox file upload in the composer", () => {
+    const html = renderChat();
+
+    expect(html).toContain('aria-label="Upload file to sandbox"');
+    expect(html).toContain('title="Upload one file, up to 3 MiB"');
+  });
 });

@@ -35,6 +35,14 @@ The `web_search` tool works even when the selected model's provider has no nativ
 
 Search uses the same Gateway authentication as the agent. It needs no additional API key. Search requests and the small model call that dispatches them are billed through AI Gateway.
 
+## Sandbox files and image generation
+
+Use the paperclip in the prompt to attach one file up to 3 MiB. Eve sends it directly to the current durable sandbox; this starter does not use Blob or another external file store. The cap keeps the base64-encoded request below Vercel's 4.5 MB function payload limit. Ask the agent to inspect, transform, or run commands against the uploaded file.
+
+The `generate_image` tool uses [OpenAI GPT Image 2](https://developers.openai.com/api/docs/models/gpt-image-2) through AI Gateway, saves the result under `/workspace/generated`, and renders the image with a download action in chat. It uses the same Gateway authentication as the main agent and needs no separate OpenAI API key.
+
+To retrieve another sandbox file, ask Eve to download its relative path or `/workspace/...` path. The `download_file` tool supports files up to 3 MiB. Inline file bytes are removed from browser history to avoid exhausting localStorage; if the page is reloaded, ask Eve to prepare the sandbox file again.
+
 ## Chat history
 
 Chat history is saved in the current browser. Each record keeps Eve's complete resumable cursor and the completed stream events needed to restore messages, reasoning, tools, and approvals after a reload. Streaming deltas are removed before storage to avoid saving repeated partial text.
