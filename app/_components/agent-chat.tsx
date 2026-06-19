@@ -28,7 +28,7 @@ const SUGGESTIONS = [
 
 type AgentStatus = ReturnType<typeof useEveAgent>["status"];
 
-export function AgentChat() {
+export function AgentChat({ model }: { readonly model: string }) {
   const agent = useEveAgent();
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const isEmpty = agent.data.messages.length === 0;
@@ -99,7 +99,7 @@ export function AgentChat() {
           </div>
           <div className="flex items-center gap-3 sm:gap-4">
             <span className="hidden font-mono text-xs text-gray-800 md:inline">
-              claude-sonnet-4.6
+              {model}
             </span>
             <StatusIndicator status={agent.status} />
             <a

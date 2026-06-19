@@ -15,6 +15,8 @@ vi.mock("evlog/next/client", () => ({
 
 import { AgentChat } from "./agent-chat";
 
+const MODEL = "zai/glm-5.2";
+
 const messages = [
   {
     id: "assistant-question",
@@ -60,7 +62,7 @@ describe("AgentChat input requests", () => {
   });
 
   it("disables an unanswered option after a newer user message", () => {
-    const html = renderToStaticMarkup(<AgentChat />);
+    const html = renderToStaticMarkup(<AgentChat model={MODEL} />);
 
     expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Approve<\/button>/);
   });
@@ -74,8 +76,15 @@ describe("AgentChat input requests", () => {
       stop: mocks.stop,
     });
 
-    const html = renderToStaticMarkup(<AgentChat />);
+    const html = renderToStaticMarkup(<AgentChat model={MODEL} />);
 
     expect(html).toMatch(/<button(?![^>]*disabled="")[^>]*>Approve<\/button>/);
+  });
+
+  it("renders the configured model", () => {
+    const html = renderToStaticMarkup(<AgentChat model={MODEL} />);
+
+    expect(html).toContain(MODEL);
+    expect(html).not.toContain("claude-sonnet-4.6");
   });
 });
