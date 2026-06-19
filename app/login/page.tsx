@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { KeyRoundIcon, TerminalIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ACCESS_PASSWORD_MIN_LENGTH } from "@/lib/auth/session";
 import { getPublicDiagnostic } from "@/lib/diagnostics/catalog";
 
 export const metadata: Metadata = {
@@ -61,7 +60,6 @@ export default async function LoginPage({
               autoComplete="current-password"
               autoFocus
               id="password"
-              minLength={ACCESS_PASSWORD_MIN_LENGTH}
               name="password"
               placeholder="Access password"
               required

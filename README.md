@@ -4,11 +4,11 @@ The smallest useful eve web starter: one agent, one Next.js page, and AI Element
 
 ## Deploy
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password%20of%20at%20least%2016%20characters.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy)
 
 Vercel asks for one private value during deployment:
 
-- `EVE_ACCESS_PASSWORD`: a unique password of at least 16 characters used to open the deployed workspace.
+- `EVE_ACCESS_PASSWORD`: a private password used to open the deployed workspace.
 
 Vercel supplies the agent with a short-lived OIDC token for AI Gateway automatically. No AI provider key is required. When deployment finishes, open its production URL and enter the access password. The browser remains signed in for 30 days. Changing `EVE_ACCESS_PASSWORD` in the Vercel project invalidates existing sessions immediately.
 

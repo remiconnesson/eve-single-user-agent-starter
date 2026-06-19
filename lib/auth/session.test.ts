@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  ACCESS_PASSWORD_MIN_LENGTH,
   createSessionToken,
   matchesAccessPassword,
   parseAccessPassword,
@@ -15,15 +14,14 @@ const OTHER_PASSWORD = "another long private passphrase";
 const NOW = Date.UTC(2026, 5, 19, 12);
 
 describe("parseAccessPassword", () => {
-  it("accepts and trims a sufficiently long password", () => {
+  it("accepts and trims any non-empty password", () => {
     expect(parseAccessPassword(`  ${ACCESS_PASSWORD}  `)).toBe(ACCESS_PASSWORD);
+    expect(parseAccessPassword("  x  ")).toBe("x");
   });
 
-  it("rejects missing and short passwords", () => {
+  it("rejects a missing or blank password", () => {
     expect(() => parseAccessPassword(undefined)).toThrow("EVE_ACCESS_PASSWORD is required");
-    expect(() => parseAccessPassword("x".repeat(ACCESS_PASSWORD_MIN_LENGTH - 1))).toThrow(
-      `at least ${ACCESS_PASSWORD_MIN_LENGTH} characters`,
-    );
+    expect(() => parseAccessPassword("   ")).toThrow("EVE_ACCESS_PASSWORD is required");
   });
 });
 

@@ -43,9 +43,9 @@ describe("buildDiagnosticReport", () => {
     expect(report.diagnostics.every((diagnostic) => diagnostic.fix.length > 0)).toBe(true);
   });
 
-  it("distinguishes an invalid access password from a missing one", () => {
+  it("accepts any configured non-empty access password", () => {
     const report = buildDiagnosticReport({
-      accessPassword: "too-short",
+      accessPassword: "x",
       environment: "production",
       generatedAt: GENERATED_AT,
       isVercel: true,
@@ -53,6 +53,7 @@ describe("buildDiagnosticReport", () => {
       oidcTokenConfigured: false,
     });
 
-    expect(report.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["EVE_C002"]);
+    expect(report.configuration.accessPasswordConfigured).toBe(true);
+    expect(report.diagnostics).toEqual([]);
   });
 });
