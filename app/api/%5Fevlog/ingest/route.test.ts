@@ -60,6 +60,28 @@ describe("POST /api/_evlog/ingest", () => {
     expect(response.status).toBe(204);
   });
 
+  it("returns a friendly configuration error when the production password is missing", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+    const request = new NextRequest("https://eve.example/api/_evlog/ingest", {
+      body: JSON.stringify({
+        event: "client.ready",
+        level: "info",
+        timestamp: "2026-06-19T12:00:00.000Z",
+      }),
+      headers: {
+        "content-type": "application/json",
+        host: "eve.example",
+        origin: "https://eve.example",
+      },
+      method: "POST",
+    });
+
+    const response = await POST(request);
+
+    await expect(response.json()).resolves.toEqual({ error: "App is not configured" });
+    expect(response.status).toBe(503);
+  });
+
   it("rejects requests from another origin", async () => {
     vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
     const request = await authenticatedRequest(

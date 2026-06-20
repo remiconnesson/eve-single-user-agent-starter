@@ -28,6 +28,17 @@ describe("proxy", () => {
     expect(response.headers.get("location")).toBe("https://eve.example/login");
   });
 
+  it("redirects to the configuration error when the production password is missing", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+
+    const response = await proxy(new NextRequest("https://eve.example/"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe(
+      "https://eve.example/login?error=configuration",
+    );
+  });
+
   it("allows a valid signed session", async () => {
     vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
     const token = await createSessionToken({

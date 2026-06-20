@@ -3,6 +3,12 @@ import { NextResponse } from "next/server";
 import { Diagnostic } from "nostics";
 import { resolveAccessMode } from "@/lib/auth/access";
 import {
+  checkLoginRateLimit,
+  loginRateLimitKeyFromHeaders,
+  recordFailedLogin,
+  resetLoginRateLimit,
+} from "@/lib/auth/login-rate-limit";
+import {
   createSessionToken,
   getAccessPassword,
   matchesAccessPassword,
@@ -26,6 +32,22 @@ export const POST = withEvlog(async (request: NextRequest) => {
     return redirectToHome(request);
   }
 
+  const rateLimitKey = loginRateLimitKeyFromHeaders(request.headers);
+  const rateLimit = checkLoginRateLimit({ key: rateLimitKey });
+  if (rateLimit.kind === "limited") {
+    requestLog.set({
+      authentication: {
+        outcome: "rate_limited",
+        retryAfterSeconds: rateLimit.retryAfterSeconds,
+      },
+    });
+    return redirectToLogin({
+      error: "rate_limited",
+      request,
+      retryAfterSeconds: rateLimit.retryAfterSeconds,
+    });
+  }
+
   const formData = await request.formData();
   const candidate = formData.get("password");
   const rememberMe = formData.get("rememberMe") === "on";
@@ -46,10 +68,12 @@ export const POST = withEvlog(async (request: NextRequest) => {
   }
 
   if (typeof candidate !== "string" || !matchesAccessPassword({ candidate, password })) {
+    recordFailedLogin({ key: rateLimitKey });
     requestLog.set({ authentication: { outcome: "denied", reason: "invalid_password" } });
     return redirectToLogin({ error: "invalid", request });
   }
 
+  resetLoginRateLimit({ key: rateLimitKey });
   requestLog.set({
     authentication: {
       outcome: "authenticated",
@@ -79,13 +103,18 @@ function redirectToHome(request: NextRequest) {
 function redirectToLogin({
   error,
   request,
+  retryAfterSeconds,
 }: {
   readonly error: string;
   readonly request: NextRequest;
+  readonly retryAfterSeconds?: number;
 }) {
   const loginUrl = new URL("/login", request.url);
   loginUrl.searchParams.set("error", error);
   const response = NextResponse.redirect(loginUrl, 303);
   response.headers.set("cache-control", "no-store");
+  if (retryAfterSeconds !== undefined) {
+    response.headers.set("retry-after", String(retryAfterSeconds));
+  }
   return response;
 }
