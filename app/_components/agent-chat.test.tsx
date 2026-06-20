@@ -187,6 +187,7 @@ describe("AgentChat input requests", () => {
       expect.objectContaining({
         initialEvents: chat.events,
         initialSession: chat.session,
+        maxReconnectAttempts: 15,
       }),
     );
   });
