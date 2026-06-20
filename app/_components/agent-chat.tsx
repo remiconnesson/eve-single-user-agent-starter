@@ -212,7 +212,6 @@ export function AgentChatSession({
         onUploadError={setUploadError}
       />
       <PromptInput
-        allowFileUploads={false}
         className="rounded-md border-gray-400 bg-background shadow-[0_2px_2px_rgba(0,0,0,0.04)] focus-within:border-gray-600"
         onSubmit={handleSubmit}
       >
