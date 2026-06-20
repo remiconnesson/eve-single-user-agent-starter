@@ -820,6 +820,21 @@ export const PromptInput = ({
         form.reset();
       }
 
+      // The provider path keeps its text until a successful submit, but the
+      // uncontrolled form was already reset above. Restore the captured text on
+      // failure so a failed send doesn't silently drop the user's message. Only
+      // restore when the field is still empty, so anything typed during the
+      // async work is preserved.
+      const restoreTextOnError = () => {
+        if (usingProvider) {
+          return;
+        }
+        const field = form.elements.namedItem("message");
+        if (field instanceof HTMLTextAreaElement && field.value === "") {
+          field.value = text;
+        }
+      };
+
       try {
         // Convert blob URLs to data URLs asynchronously
         const convertedFiles: FileUIPart[] = await Promise.all(
@@ -847,7 +862,8 @@ export const PromptInput = ({
               controller.textInput.clear();
             }
           } catch {
-            // Don't clear on error - user may want to retry
+            // Submission failed. Restore the text so the user can retry.
+            restoreTextOnError();
           }
         } else {
           // Sync function completed without throwing, clear inputs
@@ -857,7 +873,8 @@ export const PromptInput = ({
           }
         }
       } catch {
-        // Don't clear on error - user may want to retry
+        // Submission failed. Restore the text so the user can retry.
+        restoreTextOnError();
       }
     },
     [usingProvider, controller, files, onSubmit, clear],
