@@ -1,5 +1,17 @@
-import { describe, expect, it } from "vitest";
-import { resolveAccessMode } from "./access";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { createSessionToken, parseAccessPassword, SESSION_COOKIE_NAME } from "./session";
+import {
+  hasAuthorizedAccess,
+  loginPathForAccessAuthorization,
+  readAccessAuthorization,
+  resolveAccessMode,
+} from "./access";
+
+const ACCESS_PASSWORD = "correct horse battery staple";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("resolveAccessMode", () => {
   it("opens Vercel Preview deployments", () => {
@@ -24,5 +36,36 @@ describe("resolveAccessMode", () => {
     ).toBe("password");
     expect(resolveAccessMode({ nodeEnv: "test" })).toBe("password");
     expect(resolveAccessMode({})).toBe("password");
+  });
+});
+
+describe("readAccessAuthorization", () => {
+  it("returns a misconfigured result instead of throwing when the production password is missing", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+
+    const authorization = await readAccessAuthorization(null);
+
+    expect(authorization).toMatchObject({
+      diagnostic: { name: "EVE_C001" },
+      kind: "misconfigured",
+    });
+    if (authorization.kind === "authorized") {
+      throw new TypeError("Expected access to be misconfigured.");
+    }
+    expect(await hasAuthorizedAccess(null)).toBe(false);
+    expect(loginPathForAccessAuthorization(authorization)).toBe(
+      "/login?error=configuration",
+    );
+  });
+
+  it("authorizes a valid signed session", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
+    const token = await createSessionToken({
+      password: parseAccessPassword(ACCESS_PASSWORD),
+    });
+
+    await expect(
+      readAccessAuthorization(`${SESSION_COOKIE_NAME}=${token}`),
+    ).resolves.toEqual({ kind: "authorized" });
   });
 });

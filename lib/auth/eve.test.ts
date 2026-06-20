@@ -58,4 +58,13 @@ describe("singleUserPasswordAuth", () => {
       ),
     ).resolves.toBeNull();
   });
+
+  it("skips production requests when the password is not configured", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+    const authenticate = singleUserPasswordAuth();
+
+    await expect(
+      authenticate(new Request("https://eve.example/eve/v1/session")),
+    ).resolves.toBeNull();
+  });
 });

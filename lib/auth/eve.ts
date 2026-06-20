@@ -1,6 +1,5 @@
 import type { AuthFn } from "eve/channels/auth";
-import { resolveAccessMode } from "./access";
-import { hasValidSessionCookie } from "./session";
+import { readAccessAuthorization, resolveAccessMode } from "./access";
 
 type OwnerPrincipal = Exclude<
   Awaited<ReturnType<AuthFn<Request>>>,
@@ -14,10 +13,8 @@ export function singleUserPasswordAuth(): AuthFn<Request> {
       return ownerPrincipal(accessMode);
     }
 
-    const isAuthenticated = await hasValidSessionCookie(request.headers.get("cookie"));
-    if (!isAuthenticated) return null;
-
-    return ownerPrincipal("password");
+    const authorization = await readAccessAuthorization(request.headers.get("cookie"));
+    return authorization.kind === "authorized" ? ownerPrincipal("password") : null;
   };
 }
 

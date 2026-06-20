@@ -1,8 +1,11 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { hasAuthorizedAccess } from "./access";
+import { loginPathForAccessAuthorization, readAccessAuthorization } from "./access";
 
 export async function requireAuthenticatedPage(): Promise<void> {
   const cookieStore = await cookies();
-  if (!(await hasAuthorizedAccess(cookieStore.toString()))) redirect("/login");
+  const authorization = await readAccessAuthorization(cookieStore.toString());
+  if (authorization.kind !== "authorized") {
+    redirect(loginPathForAccessAuthorization(authorization));
+  }
 }

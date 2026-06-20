@@ -22,6 +22,8 @@ export default async function LoginPage({
       ? "That password is not correct. Try again."
       : error === "configuration"
         ? "The app is not configured. Check the server logs."
+        : error === "rate_limited"
+          ? "Too many incorrect attempts. Wait a few minutes, then try again."
         : undefined;
 
   return (
