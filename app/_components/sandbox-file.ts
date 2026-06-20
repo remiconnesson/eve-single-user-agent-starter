@@ -89,6 +89,10 @@ export function parseGeneratedImageOutput(output: unknown): SandboxFileArtifact 
   return parsed.success ? parsed.data : null;
 }
 
+export function isSandboxImageArtifact(artifact: SandboxFileArtifact): boolean {
+  return sandboxImageArtifactSchema.safeParse(artifact).success;
+}
+
 export function sandboxFileDataUrl(artifact: SandboxFileArtifact): string {
   return `data:${artifact.mediaType};base64,${artifact.dataBase64}`;
 }

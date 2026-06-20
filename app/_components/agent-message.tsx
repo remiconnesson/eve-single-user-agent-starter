@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   type SandboxFileArtifact,
+  isSandboxImageArtifact,
   parseDownloadFileOutput,
   parseGeneratedImageOutput,
   sandboxFileDataUrl,
@@ -141,8 +142,8 @@ function AgentMessagePart({
               </ToolContent>
             </Tool>
             {artifact ? (
-              part.toolName === "generate_image" ? (
-                <GeneratedImage artifact={artifact} />
+              isSandboxImageArtifact(artifact) ? (
+                <ImageArtifact artifact={artifact} />
               ) : (
                 <DownloadFile artifact={artifact} />
               )
@@ -160,7 +161,7 @@ function artifactFromToolPart(part: EveDynamicToolPart): SandboxFileArtifact | n
   return null;
 }
 
-function GeneratedImage({ artifact }: { readonly artifact: SandboxFileArtifact }) {
+function ImageArtifact({ artifact }: { readonly artifact: SandboxFileArtifact }) {
   const dataUrl = sandboxFileDataUrl(artifact);
 
   return (
@@ -168,7 +169,7 @@ function GeneratedImage({ artifact }: { readonly artifact: SandboxFileArtifact }
       {/* This authenticated, in-memory tool result is not an addressable Next.js image. */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        alt="Generated image"
+        alt={artifact.filename}
         className="max-h-[32rem] w-full object-contain"
         loading="lazy"
         src={dataUrl}
