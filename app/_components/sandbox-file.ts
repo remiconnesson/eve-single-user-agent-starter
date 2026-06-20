@@ -9,6 +9,7 @@ import {
   sandboxFileArtifactSchema,
   sandboxFilenameSchema,
   sandboxImageArtifactSchema,
+  sandboxImageMediaTypeSchema,
   sandboxMediaTypeSchema,
 } from "@/lib/sandbox-files/contracts";
 
@@ -87,6 +88,10 @@ export function parseGeneratedImageOutput(output: unknown): SandboxFileArtifact 
     withGeneratedImageFilename(output),
   );
   return parsed.success ? parsed.data : null;
+}
+
+export function isSandboxImageArtifact(artifact: SandboxFileArtifact): boolean {
+  return sandboxImageMediaTypeSchema.safeParse(artifact.mediaType).success;
 }
 
 export function sandboxFileDataUrl(artifact: SandboxFileArtifact): string {

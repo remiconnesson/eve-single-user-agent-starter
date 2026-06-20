@@ -50,8 +50,14 @@ export const sandboxFileArtifactSchema = z
 
 export type SandboxFileArtifact = z.output<typeof sandboxFileArtifactSchema>;
 
+export const sandboxImageMediaTypeSchema = z.enum([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
+
 export const sandboxImageArtifactSchema = sandboxFileArtifactSchema.safeExtend({
-  mediaType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  mediaType: sandboxImageMediaTypeSchema,
 });
 
 function isSafeSandboxPath(value: string): boolean {

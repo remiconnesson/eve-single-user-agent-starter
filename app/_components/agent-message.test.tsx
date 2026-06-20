@@ -42,9 +42,23 @@ describe("AgentMessage sandbox files", () => {
       path: "/workspace/generated.png",
     });
 
-    expect(html).toContain('<img alt="Generated image"');
+    expect(html).toContain('<img alt="generated.png"');
     expect(html).toContain("data:image/png;base64,iVBORw==");
     expect(html).toContain("Download image");
+  });
+
+  it("renders downloaded image bytes inline with a download action", () => {
+    const html = renderToolMessage("download_file", {
+      byteLength: 4,
+      dataBase64: "iVBORw==",
+      filename: "chart.png",
+      mediaType: "image/png",
+      path: "/workspace/chart.png",
+    });
+
+    expect(html).toContain('<img alt="chart.png"');
+    expect(html).toContain("data:image/png;base64,iVBORw==");
+    expect(html).toContain('download="chart.png"');
   });
 
   it("renders a validated download_file result as a download", () => {
@@ -58,6 +72,20 @@ describe("AgentMessage sandbox files", () => {
 
     expect(html).toContain('download="report.txt"');
     expect(html).toContain("Download report.txt");
+    expect(html).not.toContain("<img");
+  });
+
+  it("keeps unsupported image media types download-only", () => {
+    const html = renderToolMessage("download_file", {
+      byteLength: 6,
+      dataBase64: "PHN2Zy8+",
+      filename: "chart.svg",
+      mediaType: "image/svg+xml",
+      path: "/workspace/chart.svg",
+    });
+
+    expect(html).toContain('download="chart.svg"');
+    expect(html).not.toContain("<img");
   });
 
   it("does not create a download for malformed output", () => {
