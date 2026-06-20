@@ -1,5 +1,6 @@
 "use client";
 
+import type { UserContent } from "ai";
 import { useEveAgent } from "eve/react";
 import { log as clientLog } from "evlog/next/client";
 import {
@@ -69,13 +70,18 @@ export function AgentChatSession({
 }) {
   const titleRef = useRef(chat.title);
   const persistedCursorRef = useRef(`${chat.events.length}:${chat.session.streamIndex}`);
+  const [draft, setDraft] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<readonly File[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const turnErrorRef = useRef<Error | null>(null);
   const agent = useEveAgent({
     initialEvents: chat.events,
     initialSession: chat.session,
     maxReconnectAttempts: MAX_STREAM_RECONNECT_ATTEMPTS,
+    onError: (error) => {
+      turnErrorRef.current = error;
+    },
   });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const stopStatus = isBusy ? agent.status : null;
@@ -135,28 +141,30 @@ export function AgentChatSession({
     const normalizedText = text.trim();
     if (!normalizedText || isSubmitting) return;
 
+    const sendAgentMessage = async (message: UserContent) => {
+      turnErrorRef.current = null;
+      await agent.send({ message });
+      if (turnErrorRef.current) {
+        throw turnErrorRef.current;
+      }
+    };
+
     if (chat.title === UNTITLED_CHAT_TITLE) {
       titleRef.current = createChatTitle(normalizedText);
     }
 
     if (pendingFiles.length === 0) {
-      await agent.send({ message: normalizedText });
+      await sendAgentMessage(normalizedText);
       return;
     }
 
     setIsUploading(true);
     setUploadError(null);
+    let content: UserContent;
     try {
-      const content = await createSandboxFileMessage({
+      content = await createSandboxFileMessage({
         files: pendingFiles,
         text: normalizedText,
-      });
-      await agent.send({ message: content });
-      setPendingFiles([]);
-      clientLog.info({
-        event: "agent.files_submitted",
-        fileCount: pendingFiles.length,
-        messageLength: normalizedText.length,
       });
     } catch (error) {
       const message =
@@ -167,17 +175,32 @@ export function AgentChatSession({
         diagnosticCode: FILE_UPLOAD_DIAGNOSTIC.code,
         event: "agent.file_submit_failed",
       });
+      throw error;
     } finally {
       setIsUploading(false);
     }
+
+    await sendAgentMessage(content);
+    setPendingFiles([]);
+    clientLog.info({
+      event: "agent.files_submitted",
+      fileCount: pendingFiles.length,
+      messageLength: normalizedText.length,
+    });
   };
 
   const handleSubmit = async (message: PromptInputMessage) => {
     const text = message.text.trim();
     if (!text || isSubmitting) return;
 
+    setDraft("");
     clientLog.info({ event: "agent.message_submitted", messageLength: text.length });
-    await sendMessage(text);
+    try {
+      await sendMessage(text);
+    } catch (error) {
+      setDraft((current) => (current === "" ? message.text : current));
+      throw error;
+    }
   };
 
   const composer = (
@@ -196,7 +219,9 @@ export function AgentChatSession({
         <PromptInputTextarea
           aria-label="Message Eve"
           className="min-h-24 px-4 py-3 pr-14 text-[16px] leading-6 placeholder:text-gray-700 sm:text-sm"
+          onChange={(event) => setDraft(event.currentTarget.value)}
           placeholder="Ask Eve anything…"
+          value={draft}
         />
         {stopButtonEnabled && stopStatus ? (
           <PromptInputStop

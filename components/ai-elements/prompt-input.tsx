@@ -862,7 +862,7 @@ export const PromptInput = ({
               controller.textInput.clear();
             }
           } catch {
-            // Submission failed — restore the text so the user can retry.
+            // Submission failed. Restore the text so the user can retry.
             restoreTextOnError();
           }
         } else {
@@ -873,7 +873,7 @@ export const PromptInput = ({
           }
         }
       } catch {
-        // Submission failed — restore the text so the user can retry.
+        // Submission failed. Restore the text so the user can retry.
         restoreTextOnError();
       }
     },
