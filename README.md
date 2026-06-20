@@ -1,24 +1,67 @@
-# eve single-user agent starter
+# Deploy your own AI agent with Eve
 
-The smallest useful eve web starter: one agent, one Next.js page, and AI Elements for streamed messages, reasoning, tools, approvals, and sandbox commands. Markdown is rendered with Streamdown through AI Elements' `MessageResponse`.
+Launch a private AI agent that can search the web, work with uploaded files, create images, run sandbox commands, and remember conversations. [Eve](https://eve.dev/docs) keeps the agent's instructions and tools in your repository and runs each conversation as a durable workflow. On Vercel, this starter does not require an AI provider key.
 
-## Deploy
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy-your-agent)
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy)
+## What you get
 
-Vercel asks for one private value for Production:
+- A private, single-user chat app
+- Web search through Vercel AI Gateway
+- File uploads and a sandbox where the agent can work
+- Image generation and downloadable files
+- Conversation history in your browser
+- A Next.js interface built with AI Elements
 
-- `EVE_ACCESS_PASSWORD`: a private password used to open the deployed workspace.
+## Deploy your agent
 
-Vercel supplies the agent with a short-lived OIDC token for AI Gateway automatically. No AI provider key is required. When deployment finishes, open its production URL and enter the access password. Sign-in lasts until the browser closes, or 30 days when **Remember me** is selected. Changing `EVE_ACCESS_PASSWORD` in the Vercel project invalidates existing sessions immediately.
+You need GitHub and Vercel accounts.
 
-Local development and Vercel Preview deployments open without the application password. This uses Vercel's `VERCEL_ENV=preview` signal; Vercel Deployment Protection, when enabled, still applies before the app. Preview URLs are otherwise public, so do not use them for sensitive conversations or data.
+1. Click **Deploy** above.
+2. Choose where Vercel should create your copy of the repository.
+3. Enter a long, unique value for `EVE_ACCESS_PASSWORD`.
+4. Deploy the project, then open its production URL.
+5. Sign in with the password you chose.
 
-The stop button is behind the server-side `EVE_ENABLE_STOP_BUTTON` feature flag and is disabled by default. Set it to `1` and redeploy to expose Eve's client abort control. This aborts the current POST or event stream; it does not cancel the durable server workflow.
+Vercel gives the agent access to AI Gateway, so you do not need to create or copy an AI provider key. Model, search, and image calls use your AI Gateway account.
 
-## Run locally
+## Try your first tasks
 
-Requires Node.js 24, pnpm, and the Vercel CLI. Link the project and pull a short-lived OIDC token for local AI Gateway access. No access password is required locally.
+Start a conversation with one of these prompts:
+
+- `Search the web for the latest news about Eve and summarize the sources.`
+- `Create an image of a small robot tending a rooftop garden.`
+- Upload a document, then ask: `Summarize this file and list the decisions I need to make.`
+- `Create a Markdown report from our conversation and give me the file.`
+
+The agent shows its tool activity in the conversation. Generated images appear in the chat, and other files include a download action.
+
+## Make the agent yours
+
+Start by changing the agent's identity. Edit [`agent/instructions.md`](./agent/instructions.md), commit the change to GitHub, and Vercel will deploy it.
+
+You can also use a coding agent with this prompt:
+
+```text
+Read AGENTS.md and the Eve docs in node_modules/eve/docs. Turn this starter into
+an agent for [describe your use case]. Keep the existing authentication, file
+handling, chat history, and AI Elements interface. Run the repository's tests,
+typecheck, and production build when you finish.
+```
+
+When you want to edit the project yourself, these are the main places to start:
+
+| File | What it controls |
+| --- | --- |
+| [`agent/instructions.md`](./agent/instructions.md) | The agent's role and behavior |
+| [`agent/agent.ts`](./agent/agent.ts) | The model the agent uses |
+| [`agent/tools/`](./agent/tools) | Extra actions the agent can take |
+
+Follow the [Eve first-agent tutorial](https://eve.dev/docs/tutorial/first-agent) to learn how instructions, models, and tools work.
+
+## Run it on your computer
+
+Local development requires [Node.js 24](https://nodejs.org/en/download), [pnpm](https://pnpm.io/installation), and the [Vercel CLI](https://vercel.com/docs/cli).
 
 ```bash
 pnpm install
@@ -27,63 +70,19 @@ vercel env pull .env.local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000). Local development does not require the application password.
 
-The agent lives in `agent/`. The web chat uses `useEveAgent()` and same-origin Eve routes configured by `withEve()`.
+## Keep your conversations private
 
-## Web search
+The production site requires `EVE_ACCESS_PASSWORD`. Local development and Vercel Preview deployments do not use this password. Preview URLs may be public unless you enable Vercel Deployment Protection, so do not use Preview deployments for sensitive conversations or files.
 
-The `web_search` tool works even when the selected model's provider has no native search. It runs [Perplexity Search through AI Gateway](https://vercel.com/docs/ai-gateway/capabilities/web-search), then gives the model structured titles, URLs, snippets, and dates.
+Chat history stays in the current browser and does not sync across devices. Deleting a chat removes its browser record, but it does not delete the underlying Eve workflow run.
 
-Search uses the same Gateway authentication as the agent. It needs no additional API key. Search requests and the small model call that dispatches them are billed through AI Gateway.
+Eve is in beta and may change before general availability. Review the [Vercel beta terms](https://vercel.com/docs/release-phases/public-beta-agreement) before using the starter with production data.
 
-## Sandbox files and image generation
+## Learn more
 
-Use **Add files** above the prompt to queue up to five files. Each file can be 1 MiB and the batch can be 3 MiB. Adding or removing a file does not send a chat message. Eve uploads the queue with the next text prompt, so several files still produce one agent turn. The starter sends files directly to the durable sandbox and does not use Blob or another external file store.
-
-Eve stores uploads at content-addressed paths under `/workspace/user_uploads/originals/`. The agent treats these files as immutable. If a request requires changes, it copies the original to the matching path under `/workspace/user_uploads/copies/` and edits that copy. `/workspace/user_uploads/manifest.json` records every upload in the session. The file size limits keep the base64-encoded request below Vercel's 4.5 MB function payload limit.
-
-The `generate_image` tool uses [OpenAI GPT Image 2](https://developers.openai.com/api/docs/models/gpt-image-2) through AI Gateway, saves the result under `/workspace/generated`, and renders the image with a download action in chat. It uses the same Gateway authentication as the main agent and needs no separate OpenAI API key.
-
-To retrieve another sandbox file, ask Eve to download its relative path or `/workspace/...` path. The `download_file` tool supports files up to 3 MiB. Inline file bytes are removed from browser history to avoid exhausting localStorage; if the page is reloaded, ask Eve to prepare the sandbox file again.
-
-## Chat history
-
-Chat history is saved in the current browser. Each record keeps Eve's complete resumable cursor and the completed stream events needed to restore messages, reasoning, tools, and approvals after a reload. Streaming deltas are removed before storage to avoid saving repeated partial text.
-
-The UI depends on the `ChatHistoryStore` interface in [`lib/chat-history/store.ts`](./lib/chat-history/store.ts). The default implementation is [`local-storage.ts`](./lib/chat-history/local-storage.ts). A Neon adapter can implement the same asynchronous `list`, `get`, `upsert`, and `remove` methods without changing the chat UI.
-
-Browser history does not sync across devices or browsers. Deleting a chat removes its browser record; it does not delete the underlying Vercel Workflow run.
-
-## Access protection
-
-This starter includes application-level protection so the production domain can remain private without Vercel's Advanced Deployment Protection. Local development and Vercel Preview bypass this application password:
-
-- The password is checked only on the server and is never included in browser JavaScript.
-- Successful login creates a signed, HTTP-only, same-site cookie.
-- Next.js verifies the cookie before rendering the page; `proxy.ts` provides the early redirect but is not the only authorization check.
-- Eve independently verifies the same cookie in Production before accepting session requests and records every accepted caller as the single `owner` principal.
-- `/eve/v1/health` remains public for deployment health checks.
-
-This is intentionally single-user access, not an account system. Use a long, unique password. There is no password recovery flow; update `EVE_ACCESS_PASSWORD` in Vercel if it needs to be replaced.
-
-## Diagnostics in logs
-
-Diagnostics are log-only. The app has no diagnostics page or support-report endpoint. Nostics codes include the reason, suggested fix, and documentation URL in structured evlog fields.
-
-The app uses [evlog](https://www.evlog.dev/) across its server and browser boundaries:
-
-- one structured event for login, logout, runtime configuration, and client-log requests;
-- global Next.js render-error capture;
-- privacy-safe browser events for submissions and failures;
-- one turn-level event from Eve with token counts, tool names, error counts, and content lengths, but no content.
-
-Browser failures appear in the browser console and are sent to the authenticated client-log endpoint, which resolves known diagnostic codes again instead of trusting client-supplied text. Vercel captures the backend events in project logs. Filter by `service`, `event`, `requestId`, or a Nostics code such as `EVE_R001`. Stable diagnostic codes and fixes live in [`docs/diagnostics`](./docs/diagnostics).
-
-## Test
-
-```bash
-pnpm test
-pnpm typecheck
-pnpm build
-```
+- [Eve documentation](https://eve.dev/docs)
+- [Eve source code](https://github.com/vercel/eve)
+- [Eve community](https://github.com/vercel/eve/discussions)
+- [Implementation and maintenance notes](./AGENTS.md)
