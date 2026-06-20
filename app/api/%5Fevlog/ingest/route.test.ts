@@ -46,6 +46,30 @@ describe("POST /api/_evlog/ingest", () => {
     expect(response.status).toBe(204);
   });
 
+  it("accepts browser-confirmed same-origin logs through a host-rewriting proxy", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", "");
+    vi.stubEnv("VERCEL_ENV", "preview");
+    const request = new NextRequest("http://localhost:3000/api/_evlog/ingest", {
+      body: JSON.stringify({
+        event: "client.ready",
+        level: "info",
+        timestamp: "2026-06-19T12:00:00.000Z",
+      }),
+      headers: {
+        "content-type": "application/json",
+        host: "localhost:3000",
+        origin: "https://v0-preview.example",
+        "sec-fetch-site": "same-origin",
+        "x-forwarded-host": "localhost:3000",
+      },
+      method: "POST",
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(204);
+  });
+
   it("accepts an allowlisted client diagnostic payload", async () => {
     vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
     const request = await authenticatedRequest({
@@ -88,6 +112,20 @@ describe("POST /api/_evlog/ingest", () => {
       { event: "test", level: "info", timestamp: "2026-06-19T12:00:00.000Z" },
       "https://attacker.example",
     );
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(403);
+  });
+
+  it("rejects requests the browser identifies as cross-site", async () => {
+    vi.stubEnv("EVE_ACCESS_PASSWORD", ACCESS_PASSWORD);
+    const request = await authenticatedRequest({
+      event: "test",
+      level: "info",
+      timestamp: "2026-06-19T12:00:00.000Z",
+    });
+    request.headers.set("sec-fetch-site", "cross-site");
 
     const response = await POST(request);
 
