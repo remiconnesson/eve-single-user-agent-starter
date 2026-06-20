@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createSessionToken, parseAccessPassword, SESSION_COOKIE_NAME } from "./session";
 import {
-  hasAuthorizedAccess,
   loginPathForAccessAuthorization,
   readAccessAuthorization,
   resolveAccessMode,
@@ -52,7 +51,6 @@ describe("readAccessAuthorization", () => {
     if (authorization.kind === "authorized") {
       throw new TypeError("Expected access to be misconfigured.");
     }
-    expect(await hasAuthorizedAccess(null)).toBe(false);
     expect(loginPathForAccessAuthorization(authorization)).toBe(
       "/login?error=configuration",
     );

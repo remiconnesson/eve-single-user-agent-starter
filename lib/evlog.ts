@@ -1,8 +1,8 @@
 import { createEvlog } from "evlog/next";
 
-export const SERVICE_NAME = "eve-single-user-agent-starter";
+const SERVICE_NAME = "eve-single-user-agent-starter";
 
-export const { createError, log, useLogger, withEvlog } = createEvlog({
+export const { log, useLogger, withEvlog } = createEvlog({
   enrich: (context) => {
     context.event.deployment = {
       commitSha: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7),

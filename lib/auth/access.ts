@@ -3,7 +3,6 @@ import { diagnostics } from "@/lib/diagnostics/catalog";
 import { hasValidSessionCookie } from "./session";
 import { resolveAccessMode } from "./access-mode";
 
-export type { AccessMode } from "./access-mode";
 export { resolveAccessMode };
 
 export type AccessAuthorization =
@@ -26,10 +25,6 @@ export async function readAccessAuthorization(
     }
     throw error;
   }
-}
-
-export async function hasAuthorizedAccess(cookieHeader: string | null): Promise<boolean> {
-  return (await readAccessAuthorization(cookieHeader)).kind === "authorized";
 }
 
 export function loginPathForAccessAuthorization(

@@ -31,7 +31,7 @@ import {
   sandboxFileDataUrl,
 } from "./sandbox-file";
 
-export type AgentInputResponse = {
+type AgentInputResponse = {
   readonly optionId?: string;
   readonly requestId: string;
   readonly text?: string;

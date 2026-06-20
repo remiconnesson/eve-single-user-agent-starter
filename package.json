@@ -2,10 +2,6 @@
   "name": "eve-single-user-agent-starter",
   "version": "0.0.0",
   "type": "module",
-  "imports": {
-    "#*": "./agent/*",
-    "#evals/*": "./evals/*"
-  },
   "scripts": {
     "build": "next build",
     "dev": "next dev",
@@ -16,24 +12,18 @@
   },
   "dependencies": {
     "@radix-ui/react-use-controllable-state": "1.2.2",
-    "@shikijs/core": "4.1.0",
-    "@shikijs/engine-javascript": "4.1.0",
-    "@shikijs/engine-oniguruma": "4.1.0",
     "@streamdown/cjk": "1.0.3",
     "@streamdown/code": "1.1.1",
     "@streamdown/math": "1.0.2",
     "@streamdown/mermaid": "1.0.2",
     "@tailwindcss/postcss": "4.3.0",
-    "@vercel/connect": "0.2.2",
     "ai": "7.0.0-beta.178",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
-    "cmdk": "1.1.1",
     "eve": "^0.11.2",
     "evlog": "^2.19.1",
     "lucide-react": "1.16.0",
     "motion": "12.40.0",
-    "nanoid": "5.1.11",
     "next": "16.2.6",
     "nostics": "^1.1.4",
     "ofetch": "^1.5.1",
@@ -54,12 +44,6 @@
     "@typescript/native-preview": "7.0.0-dev.20260523.1",
     "microsandbox": "^0.5.7",
     "vitest": "^4.1.9"
-  },
-  "overrides": {
-    "ai": "7.0.0-beta.178"
-  },
-  "resolutions": {
-    "ai": "7.0.0-beta.178"
   },
   "engines": {
     "node": "24.x"

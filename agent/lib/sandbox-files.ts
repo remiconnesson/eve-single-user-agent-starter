@@ -88,11 +88,11 @@ export const sandboxFilePathSchema = sandboxFileInputPathSchema
   .transform(toAbsoluteWorkspacePath)
   .brand<"SandboxFilePath">();
 
-export type SandboxFilePath = z.output<typeof sandboxFilePathSchema>;
+type SandboxFilePath = z.output<typeof sandboxFilePathSchema>;
 
 export const downloadSandboxFileOutputSchema = sandboxFileArtifactSchema;
 
-export type SandboxFileDownload = SandboxFileArtifact;
+type SandboxFileDownload = SandboxFileArtifact;
 
 type SandboxFileReader = {
   readonly readFile: (
@@ -118,7 +118,7 @@ export function normalizeSandboxFilePath(input: string): SandboxFilePath {
   });
 }
 
-export function getSandboxFileMetadata(path: SandboxFilePath): {
+function getSandboxFileMetadata(path: SandboxFilePath): {
   readonly filename: string;
   readonly mediaType: string;
 } {
