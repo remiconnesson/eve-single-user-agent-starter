@@ -40,6 +40,9 @@ import { SandboxUploadControl } from "./sandbox-upload-control";
 const BETA_TERMS_HREF = "https://vercel.com/docs/release-phases/public-beta-agreement";
 const AGENT_REQUEST_DIAGNOSTIC = toDiagnosticLogFields(diagnostics.EVE_R001());
 const FILE_UPLOAD_DIAGNOSTIC = toDiagnosticLogFields(diagnostics.EVE_R002());
+// Vercel rotated the observed stream about every two minutes. Keep long turns
+// attached for roughly 30 minutes while vercel/eve#134 is unresolved.
+const MAX_STREAM_RECONNECT_ATTEMPTS = 15;
 
 type AgentStatus = ReturnType<typeof useEveAgent>["status"];
 
@@ -72,6 +75,7 @@ export function AgentChatSession({
   const agent = useEveAgent({
     initialEvents: chat.events,
     initialSession: chat.session,
+    maxReconnectAttempts: MAX_STREAM_RECONNECT_ATTEMPTS,
   });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const stopStatus = isBusy ? agent.status : null;
