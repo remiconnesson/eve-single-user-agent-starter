@@ -56,6 +56,10 @@ export const POST = withEvlog(async (request: NextRequest) => {
 });
 
 function hasValidOrigin(request: NextRequest): boolean {
+  const fetchSite = request.headers.get("sec-fetch-site");
+  if (fetchSite === "same-origin") return true;
+  if (fetchSite === "cross-site" || fetchSite === "same-site") return false;
+
   const origin = request.headers.get("origin");
   if (!origin) return true;
 
