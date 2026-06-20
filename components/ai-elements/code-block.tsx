@@ -135,16 +135,29 @@ const highlighterCache = new Map<
   Promise<HighlighterGeneric<BundledLanguage, BundledTheme>>
 >();
 
-// Token cache
+// Token cache (LRU-bounded). Keep this from growing without limit as a long
+// session renders many distinct code blocks.
+const MAX_TOKENS_CACHE_ENTRIES = 256;
 const tokensCache = new Map<string, TokenizedCode>();
 
 // Subscribers for async token updates
 const subscribers = new Map<string, Set<(result: TokenizedCode) => void>>();
 
-const getTokensCacheKey = (code: string, language: BundledLanguage) => {
-  const start = code.slice(0, 100);
-  const end = code.length > 100 ? code.slice(-100) : "";
-  return `${language}:${code.length}:${start}:${end}`;
+// Key on the complete code: a truncated key (length + first/last 100 chars)
+// collides for distinct blocks of equal length that share their head and tail,
+// which would render one block with another's tokens.
+const getTokensCacheKey = (code: string, language: BundledLanguage) =>
+  `${language}:${code}`;
+
+const setTokensCache = (key: string, value: TokenizedCode) => {
+  tokensCache.set(key, value);
+  while (tokensCache.size > MAX_TOKENS_CACHE_ENTRIES) {
+    const oldest = tokensCache.keys().next().value;
+    if (oldest === undefined) {
+      break;
+    }
+    tokensCache.delete(oldest);
+  }
 };
 
 const getHighlighter = (
@@ -189,9 +202,11 @@ export const highlightCode = (
 ): TokenizedCode | null => {
   const tokensCacheKey = getTokensCacheKey(code, language);
 
-  // Return cached result if available
+  // Return cached result if available, refreshing its LRU recency.
   const cached = tokensCache.get(tokensCacheKey);
   if (cached) {
+    tokensCache.delete(tokensCacheKey);
+    tokensCache.set(tokensCacheKey, cached);
     return cached;
   }
 
@@ -225,7 +240,7 @@ export const highlightCode = (
       };
 
       // Cache the result
-      tokensCache.set(tokensCacheKey, tokenized);
+      setTokensCache(tokensCacheKey, tokenized);
 
       // Notify all subscribers
       const subs = subscribers.get(tokensCacheKey);
