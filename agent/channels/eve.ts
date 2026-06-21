@@ -10,7 +10,7 @@ export default eveChannel({
     localDev(),
     // Accept the signed, HTTP-only cookie created by the app's password gate.
     singleUserPasswordAuth(),
-    // Lets the Eve TUI and your Vercel deployments reach the deployed agent.
+    // Lets the eve TUI and your Vercel deployments reach the deployed agent.
     vercelOidc(),
   ],
   async onMessage(context, message) {

@@ -216,10 +216,10 @@ export function AgentChatSession({
         onSubmit={handleSubmit}
       >
         <PromptInputTextarea
-          aria-label="Message Eve"
+          aria-label="Message eve"
           className="min-h-24 px-4 py-3 pr-14 text-[16px] leading-6 placeholder:text-gray-700 sm:text-sm"
           onChange={(event) => setDraft(event.currentTarget.value)}
-          placeholder="Ask Eve anything…"
+          placeholder="Ask eve anything…"
           value={draft}
         />
         {stopButtonEnabled && stopStatus ? (
@@ -335,7 +335,7 @@ export function AgentChatSession({
                   <TerminalIcon aria-hidden="true" className="size-4" />
                 </div>
                 <h1 className="max-w-xl text-[32px] font-semibold leading-10 tracking-[-0.04em] sm:text-[40px] sm:leading-12">
-                  What can Eve help with?
+                  What can eve help with?
                 </h1>
                 <p className="mt-3 max-w-xl text-sm leading-6 text-gray-900 sm:text-base">
                   Ask a question, inspect a project, or run tools in a secure sandbox.
@@ -367,7 +367,7 @@ export function AgentChatSession({
             <div className="mx-auto w-full max-w-3xl">
               {composer}
               <p className="mt-2 text-center text-xs text-gray-800">
-                Eve can make mistakes. Review tool output before using it.
+                eve can make mistakes. Review tool output before using it.
               </p>
             </div>
           </div>

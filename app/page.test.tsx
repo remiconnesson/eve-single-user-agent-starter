@@ -10,7 +10,7 @@ describe("Page", () => {
     vi.unstubAllEnvs();
   });
 
-  it("passes the Eve agent model to the chat", async () => {
+  it("passes the eve agent model to the chat", async () => {
     const page = await Page();
     if (!isValidElement<{ readonly model: string; readonly stopButtonEnabled: boolean }>(page)) {
       throw new TypeError("Expected Page to return a React element.");

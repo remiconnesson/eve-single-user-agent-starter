@@ -164,7 +164,7 @@ describe("AgentChat input requests", () => {
     expect(html).toMatch(/<button[^>]*aria-label="Submit"[^>]*disabled=""/);
   });
 
-  it("offers Eve's stop action while the feature flag is enabled", () => {
+  it("offers eve's stop action while the feature flag is enabled", () => {
     mocks.useEveAgent.mockReturnValue({
       data: { messages },
       error: undefined,
@@ -180,7 +180,7 @@ describe("AgentChat input requests", () => {
     expect(html).toContain('aria-label="Stop"');
   });
 
-  it("restores the complete saved Eve session", () => {
+  it("restores the complete saved eve session", () => {
     renderChat();
 
     expect(mocks.useEveAgent).toHaveBeenCalledWith(

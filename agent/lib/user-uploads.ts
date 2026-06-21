@@ -96,7 +96,7 @@ export function withUserUploads(
 ): SessionAuthContext | null {
   if (uploads.length === 0) return auth;
   if (auth === null) {
-    throw new Error("Uploaded files require an authenticated Eve session.");
+    throw new Error("Uploaded files require an authenticated eve session.");
   }
 
   return {

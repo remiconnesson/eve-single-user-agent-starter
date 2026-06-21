@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { resolveAccessMode } from "@/lib/auth/access";
 
 export const metadata: Metadata = {
-  title: "Sign In | Eve Single-User Agent Starter",
+  title: "Sign In | eve Single-User Agent Starter",
 };
 
 export default async function LoginPage({
@@ -46,7 +46,7 @@ export default async function LoginPage({
           </div>
           <h1 className="text-2xl font-semibold tracking-[-0.03em]">Enter your access password</h1>
           <p className="mt-2 text-sm leading-6 text-gray-900">
-            Use the private password chosen when this Eve workspace was deployed.
+            Use the private password chosen when this eve workspace was deployed.
           </p>
         </div>
 

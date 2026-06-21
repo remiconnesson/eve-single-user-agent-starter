@@ -7,7 +7,7 @@ import {
 } from "./sandbox-file";
 
 describe("createSandboxFileMessage", () => {
-  it("builds one Eve turn with text and several inline files", async () => {
+  it("builds one eve turn with text and several inline files", async () => {
     const message = await createSandboxFileMessage({
       files: [
         new File(["hello"], "notes.txt", { type: "text/plain" }),
