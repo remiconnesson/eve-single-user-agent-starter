@@ -1,4 +1,4 @@
-# Deploy your own AI agent with Eve
+# Deploy your own AI agent with eve
 
 Launch a private AI agent that can search the web, work with uploaded files, create images, run sandbox commands, and remember conversations. [eve](https://eve.dev/docs) keeps the agent's instructions and tools in your repository and runs each conversation as a durable workflow. On Vercel, this starter does not require an AI provider key.
 
