@@ -57,7 +57,7 @@ describe("LocalStorageChatHistoryStore", () => {
     storage = createMemoryStorage();
   });
 
-  it("persists complete Eve session state behind the history-store interface", async () => {
+  it("persists complete eve session state behind the history-store interface", async () => {
     const store = createLocalStorageChatHistoryStore({ key: STORAGE_KEY, storage });
     const chat = record();
 

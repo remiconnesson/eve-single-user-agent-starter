@@ -26,8 +26,8 @@ const clientLogTransport = {
 } as const;
 
 export const metadata: Metadata = {
-  title: "Eve Single-User Agent Starter",
-  description: "A private single-user Eve agent starter built with AI Elements.",
+  title: "eve Single-User Agent Starter",
+  description: "A private single-user eve agent starter built with AI Elements.",
   robots: {
     follow: false,
     index: false,
