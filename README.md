@@ -1,6 +1,6 @@
 # Deploy your own AI agent with Eve
 
-Launch a private AI agent that can search the web, work with uploaded files, create images, run sandbox commands, and remember conversations. [Eve](https://eve.dev/docs) keeps the agent's instructions and tools in your repository and runs each conversation as a durable workflow. On Vercel, this starter does not require an AI provider key.
+Launch a private AI agent that can search the web, work with uploaded files, create images, run sandbox commands, and remember conversations. [eve](https://eve.dev/docs) keeps the agent's instructions and tools in your repository and runs each conversation as a durable workflow. On Vercel, this starter does not require an AI provider key.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy-your-agent)
 
