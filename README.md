@@ -11,7 +11,7 @@ Install the skill and the vercel plugin so that your coding agents knows how to 
 Customize it your way, the possibilities are endless:
 - want to talk to your agents through telegram? ask for the [telegram channel](https://eve.dev/docs/channels/telegram)!
 - want your agent to send you a report every morning? ask for a [schedule](https://eve.dev/docs/schedules)
-- want you agent to orchestrate a fleet of specialist? ask for subagents
+- want you agent to orchestrate a fleet of specialist? ask for [subagents](https://eve.dev/docs/subagents)
 - Want to connect to your Data Warehouse? ask your coding agent to help you do it!
 
 ## What you get
