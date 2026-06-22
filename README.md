@@ -1,5 +1,7 @@
 # Single User Agent starter template
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy-your-agent)
+
 This template is meant to be a starter you can customize.
 
 On top of `eve`s amazing out of the box practicality, this starter adds an user-interface on top to make it ready to use out of the box for most people.
@@ -11,12 +13,6 @@ Customize it your way, the possibilities are endless:
 - want your agent to send you a report every morning? ask for a [schedule](https://eve.dev/docs/schedules)
 - want you agent to orchestrate a fleet of specialist? ask for subagents
 - Want to connect to your Data Warehouse? ask your coding agent to help you do it!
-
-## Deploy your own AI agent with eve
-
-Launch a private AI agent that can search the web, work with uploaded files, create images, run sandbox commands, and remember conversations. [eve](https://eve.dev/docs) keeps the agent's instructions and tools in your repository and runs each conversation as a durable workflow. On Vercel, this starter does not require an AI provider key.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter&env=EVE_ACCESS_PASSWORD&envDescription=Choose%20a%20private%20password.&envLink=https%3A%2F%2Fgithub.com%2Fremiconnesson%2Feve-single-user-agent-starter%23deploy-your-agent)
 
 ## What you get
 
@@ -31,7 +27,7 @@ Launch a private AI agent that can search the web, work with uploaded files, cre
 
 You need GitHub and Vercel accounts.
 
-1. Click **Deploy** above.
+1. Click **Deploy** above, at the top of the README.md
 2. Choose where Vercel should create your copy of the repository.
 3. Enter a long, unique value for `EVE_ACCESS_PASSWORD`.
 4. Deploy the project, then open its production URL.
