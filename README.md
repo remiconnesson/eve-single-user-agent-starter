@@ -1,4 +1,18 @@
-# Deploy your own AI agent with eve
+# Single User Agent starter template
+
+This template is meant to be a starter you can customize.
+
+On top of `eve`s amazing out of the box practicality, this starter adds an user-interface on top to make it ready to use out of the box for most people.
+
+Install the skill and the vercel plugin so that your coding agents knows how to work with `eve`, then you can just ask it to customize this agent!
+
+Customize it your way, the possibilities are endless:
+- want to talk to your agents through telegram? ask for the [telegram channel](https://eve.dev/docs/channels/telegram)!
+- want your agent to send you a report every morning? ask for a [schedule](https://eve.dev/docs/schedules)
+- want you agent to orchestrate a fleet of specialist? ask for subagents
+- Want to connect to your Data Warehouse? ask your coding agent to help you do it!
+
+## Deploy your own AI agent with eve
 
 Launch a private AI agent that can search the web, work with uploaded files, create images, run sandbox commands, and remember conversations. [eve](https://eve.dev/docs) keeps the agent's instructions and tools in your repository and runs each conversation as a durable workflow. On Vercel, this starter does not require an AI provider key.
 
