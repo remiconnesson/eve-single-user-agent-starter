@@ -78,8 +78,6 @@ The production site requires `EVE_ACCESS_PASSWORD`. Local development and Vercel
 
 Chat history stays in the current browser and does not sync across devices. Deleting a chat removes its browser record, but it does not delete the underlying eve workflow run.
 
-eve is in beta and may change before general availability. Review the [Vercel beta terms](https://vercel.com/docs/release-phases/public-beta-agreement) before using the starter with production data.
-
 ## Learn more
 
 - [eve documentation](https://eve.dev/docs)
